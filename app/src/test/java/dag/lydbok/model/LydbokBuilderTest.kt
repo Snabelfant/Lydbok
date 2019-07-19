@@ -1,7 +1,6 @@
-package dag.lydbok
+package dag.lydbok.model
 
-import dag.lydbok.model.LydbokBuilder
-import org.hamcrest.core.Is.*
+import org.hamcrest.core.Is.`is`
 import org.junit.Assert.assertThat
 import org.junit.Test
 import java.io.File
