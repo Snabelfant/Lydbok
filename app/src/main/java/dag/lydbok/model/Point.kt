@@ -1,7 +1,6 @@
 package dag.lydbok.model
 
-class Point(val track: Track, val trackOffset: Int, lydbokBaseOffset: Int) {
+class Point(val track: Track, val trackOffset: Int) {
     val isStartOfTrack = trackOffset == 0
-    val lydbokOffset = lydbokBaseOffset + trackOffset
-
+    val lydbokOffset = track.startTime + trackOffset
 }
