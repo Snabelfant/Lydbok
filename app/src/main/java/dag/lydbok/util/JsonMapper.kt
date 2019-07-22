@@ -4,20 +4,18 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.ObjectWriter
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
-object JsonMapper {
+class JsonMapper {
     private val writerPretty: ObjectWriter
     private val writer: ObjectWriter
     private val objectMapper: ObjectMapper = ObjectMapper()
 
     init {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        objectMapper.registerModule(JavaTimeModule())
+//        objectMapper.registerModule(JavaTimeModule())
         writerPretty = objectMapper.writerWithDefaultPrettyPrinter()
         writer = objectMapper.writer()
     }
@@ -28,6 +26,14 @@ object JsonMapper {
             writerPretty.writeValue(outputStream, any)
         } else {
             writer.writeValue(outputStream, any)
+        }
+
+    @Throws(IOException::class)
+    fun write(any: Any, pretty: Boolean = false) =
+        if (pretty) {
+            writerPretty.writeValueAsString(any)
+        } else {
+            writer.writeValueAsString(any)
         }
 
     @Throws(IOException::class)

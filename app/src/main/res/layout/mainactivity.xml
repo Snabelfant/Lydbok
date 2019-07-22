@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:paddingLeft="@dimen/activity_horizontal_margin"
+                android:paddingTop="@dimen/activity_vertical_margin"
+                android:paddingRight="@dimen/activity_horizontal_margin"
+                android:paddingBottom="@dimen/activity_vertical_margin"
+                tools:context="dag.lydbok.MainActivity">
+
+
+    <Spinner
+            android:id="@+id/lydbokspinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown"/>
+
+    <View
+            android:id="@+id/player_horizontal_rule1"
+            android:layout_width="fill_parent"
+            android:layout_height="2dp"
+            android:layout_below="@+id/lydbokspinner"
+            android:background="#FF00FF00"/>
+
+    <ListView
+            android:id="@+id/tracks"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@+id/playercontrols"
+            android:layout_below="@+id/player_horizontal_rule1"
+            android:drawSelectorOnTop="false"/>
+
+    <RelativeLayout
+            android:id="@+id/playercontrols"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true">
+
+        <View
+                android:id="@+id/player_horizontal_rule2"
+                android:layout_width="fill_parent"
+                android:layout_height="2dp"
+                android:layout_alignParentTop="true"
+                android:background="#FF00FF00"/>
+
+        <RelativeLayout
+                android:id="@+id/playerlocalprogress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/player_horizontal_rule2"
+                android:orientation="horizontal">
+
+            <SeekBar
+                    android:id="@+id/playerlocalseekbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            <TextView
+                    android:id="@+id/playerlocalcurrentposition"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/playerlocalseekbar"
+                    android:layout_alignParentStart="true"/>
+
+            <TextView
+                    android:id="@+id/playerlocalduration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/playerlocalseekbar"
+                    android:layout_alignParentEnd="true"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+                android:id="@+id/playertotalprogress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/playerlocalprogress"
+                android:orientation="horizontal">
+
+            <SeekBar
+                    android:id="@+id/playertotalseekbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            <TextView
+                    android:id="@+id/playertotalcurrentposition"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/playertotalseekbar"
+                    android:layout_alignParentStart="true"/>
+
+            <TextView
+                    android:id="@+id/playertotalduration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/playertotalseekbar"
+                    android:layout_alignParentEnd="true"/>
+
+        </RelativeLayout>
+
+        <RelativeLayout
+                android:id="@+id/player_buttons"
+                android:layout_width="wrap_content"
+                android:layout_height="55dp"
+                android:layout_below="@+id/playertotalprogress"
+                android:orientation="horizontal">
+
+            <Button
+                    android:id="@+id/playerbackwardpct"
+                    android:layout_width="@dimen/player_button_narrow_width"
+                    android:layout_height="match_parent"
+                    android:layout_toStartOf="@+id/playerbackwardsecs"
+                    android:text="-%"/>
+
+            <Button
+                    android:id="@+id/playerbackwardsecs"
+                    android:layout_width="@dimen/player_button_narrow_width"
+                    android:layout_height="match_parent"
+                    android:layout_toStartOf="@+id/playerpauseorresume"
+                    android:text="-s"/>
+
+            <Button
+                    android:id="@+id/playerpauseorresume"
+                    android:layout_width="@dimen/player_button_wide_width"
+                    android:layout_height="match_parent"
+                    android:layout_toStartOf="@+id/playerforwardsecs"
+                    android:gravity="center"
+                    android:text=">"/>
+
+            <Button
+                    android:id="@+id/playerforwardsecs"
+                    android:layout_width="@dimen/player_button_narrow_width"
+                    android:layout_height="match_parent"
+                    android:layout_toLeftOf="@+id/playerforwardpct"
+                    android:text="+s"/>
+
+            <Button
+                    android:id="@+id/playerforwardpct"
+                    android:layout_width="@dimen/player_button_narrow_width"
+                    android:layout_height="match_parent"
+                    android:layout_toLeftOf="@+id/playerstop"
+                    android:text="+%"/>
+
+            <Button
+                    android:id="@+id/playerstop"
+                    android:layout_width="@dimen/player_button_narrow_width"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentRight="true"
+                    android:text="X"/>
+        </RelativeLayout>
+
+
+    </RelativeLayout>
+
+</RelativeLayout>

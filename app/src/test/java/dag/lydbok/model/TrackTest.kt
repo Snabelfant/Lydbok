@@ -1,6 +1,5 @@
 package dag.lydbok.model
 
-import dag.lydbok.exception.LydbokException
 import org.hamcrest.core.Is.`is`
 import org.junit.Assert.*
 import org.junit.Test

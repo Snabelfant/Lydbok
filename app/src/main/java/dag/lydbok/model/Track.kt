@@ -1,6 +1,5 @@
 package dag.lydbok.model
 
-import dag.lydbok.exception.LydbokException
 import java.io.File
 
 class Track(val trackFile: File, val startTime: Int, val endTimeExclusive: Int) : Comparable<Track> {

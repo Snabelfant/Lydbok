@@ -1,23 +1,11 @@
 package dag.lydbok.util
 
 import android.util.Log
-
 import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.ObjectWriter
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 
 object Logger {
-    private val objectMapper: ObjectMapper = ObjectMapper()
-    private val writerPrettyPrint: ObjectWriter = objectMapper.writerWithDefaultPrettyPrinter()
-    private val writerLogFile: ObjectWriter = objectMapper.writer()
+    private val mapper = JsonMapper()
     private var isTest = false
-
-    init {
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        objectMapper.registerModule(JavaTimeModule())
-    }
 
     fun info(any: Any) {
         log(false, any)
@@ -29,20 +17,20 @@ object Logger {
 
     private fun log(isError: Boolean, any: Any?) {
         if (isTest) {
-            println(toLogString(writerPrettyPrint, any))
+            println(toLogString(any, true))
         } else {
             if (isError) {
-                Log.e("ZZZ", toLogString(writerLogFile, any))
+                Log.e("ZZZ", toLogString(any))
             } else {
-                Log.i("ZZZ", toLogString(writerLogFile, any))
+                Log.i("ZZZ", toLogString(any))
             }
         }
     }
 
-    private fun toLogString(objectWriter: ObjectWriter, any: Any?) =
+    private fun toLogString(any: Any?, pretty: Boolean = false) =
         if (any != null) {
             try {
-                ": ${objectWriter.writeValueAsString(any)}"
+                ": ${mapper.write(any, pretty)}"
             } catch (e: JsonProcessingException) {
                 " !! ${e.message}"
             }
