@@ -3,8 +3,7 @@ package dag.lydbok.repository
 import androidx.lifecycle.MutableLiveData
 import dag.lydbok.model.Lydbok
 import dag.lydbok.model.Lydbøker
-import dag.lydbok.model.Tracks
-import dag.lydbok.model.getSelected
+import dag.lydbok.model.setSelected
 import dag.lydbok.util.Logger
 import dag.lydbok.util.getDuration
 import java.io.File
@@ -12,9 +11,8 @@ import java.io.File
 object Repository {
     private var isOpened = false
     lateinit var lydbøker: Lydbøker
-    private lateinit var appDir: File
-    lateinit var liveTracks: MutableLiveData<Tracks>
         private set
+    private lateinit var appDir: File
 
     lateinit var liveLydbøker: MutableLiveData<Lydbøker>
         private set
@@ -27,21 +25,15 @@ object Repository {
         this.appDir = appDir
 
         lydbøker = LydbøkerBuilder.build(appDir) { file -> file.getDuration() }
-        liveTracks = MutableLiveData(lydbøker.getSelected().tracks)
         liveLydbøker = MutableLiveData(lydbøker)
         isOpened = true
     }
 
-    private fun signalTracksUpdate() = liveTracks.postValue(lydbøker.getSelected().tracks)
 
     fun save() = lydbøker.forEach { ConfigStorage.save(it.lydbokDir, it.config) }
 
     private fun signalLydbokChanged() {
-        signalTracksUpdate()
-    }
-
-    fun setSelected(lydbok: Lydbok) {
-        signalLydbokChanged()
+        liveLydbøker.postValue(lydbøker)
     }
 
     fun setLydbokCompleted() {
@@ -52,6 +44,11 @@ object Repository {
 
     fun stopPlaying() {
 //        signalPlayingStopped()
+    }
+
+    fun selectLydbok(lydbok: Lydbok) {
+        lydbøker.setSelected(lydbok)
+        signalLydbokChanged()
     }
 
 }

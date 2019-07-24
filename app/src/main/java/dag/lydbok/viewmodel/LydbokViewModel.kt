@@ -3,9 +3,9 @@ package dag.lydbok.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import dag.lydbok.model.Lydbok
 import dag.lydbok.model.Lydbøker
 import dag.lydbok.model.Track
-import dag.lydbok.model.Tracks
 import dag.lydbok.repository.Repository
 import java.io.IOException
 
@@ -13,12 +13,9 @@ class LydbokViewModel @Throws(IOException::class)
 constructor(application: Application) : AndroidViewModel(application) {
     val liveLydbøker: LiveData<Lydbøker>
 
-    val liveTracks: LiveData<Tracks>
-
     init {
         Repository.open(application.getExternalFilesDir(null)!!)
         liveLydbøker = Repository.liveLydbøker
-        liveTracks = Repository.liveTracks
     }
 
     fun setPlaying(track: Track) {
@@ -35,5 +32,9 @@ constructor(application: Application) : AndroidViewModel(application) {
 
     fun save() {
         Repository.save()
+    }
+
+    fun selectLydbok(lydbok: Lydbok) {
+        Repository.selectLydbok(lydbok)
     }
 }

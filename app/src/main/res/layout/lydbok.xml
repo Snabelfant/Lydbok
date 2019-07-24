@@ -5,17 +5,22 @@
               android:orientation="horizontal">
 
     <TextView
-            android:id="@+id/tracktitle"
-            android:layout_width="310dp"
+            android:id="@+id/lydboktitle"
+            android:layout_width="205dp"
             android:layout_height="match_parent"
             android:paddingLeft="5dp"
             android:paddingRight="5dp"
             android:text="(Tittel)"/>
 
     <TextView
-            android:id="@+id/trackduration"
+            android:id="@+id/lydbokposition"
             android:layout_width="50dp"
             android:layout_height="match_parent"
-            android:text="(xx:yy)"/>
+    />
+    <TextView
+            android:id="@+id/lydbokduration"
+            android:layout_width="50dp"
+            android:layout_height="match_parent"
+    />
 
 </LinearLayout>

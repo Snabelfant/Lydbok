@@ -16,6 +16,9 @@ class Track(val trackFile: File, val startTime: Int, val endTimeExclusive: Int) 
         return compareTo
     }
 
+    fun isBefore(another: Track) = startTime < another.startTime
+    fun isAfter(another: Track) = startTime > another.startTime
+
     override fun toString(): String {
         return "Track($trackFile/$duration/$startTime/$endTimeExclusive)"
     }

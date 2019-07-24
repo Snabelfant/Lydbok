@@ -23,7 +23,6 @@ object TracksBuilder {
                 lydbokOffset = endTimeExclusive
             }
 
-        tracks.forEach { println(it) }
         return tracks
     }
 

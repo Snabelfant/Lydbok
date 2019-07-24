@@ -1,25 +1,23 @@
 package dag.lydbok.ui
 
 import android.content.Context
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import dag.lydbok.R
+import dag.lydbok.model.Lydbok
 import dag.lydbok.model.Track
-import dag.lydbok.model.Tracks
 import dag.lydbok.util.DateUtil
 
 class TracksAdapter(context: Context) : ArrayAdapter<Track>(context, R.layout.track) {
-    private val inflater: LayoutInflater
-    private var tracks: Tracks = mutableListOf()
+    private val inflater: LayoutInflater =
+        super.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+    private var lydbok: Lydbok? = null
 
-    init {
-        inflater = super.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-    }
-
-    override fun getCount(): Int = tracks.size
+    override fun getCount(): Int = lydbok?.tracks?.size ?: 0
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         val track = getItem(position)
@@ -28,12 +26,24 @@ class TracksAdapter(context: Context) : ArrayAdapter<Track>(context, R.layout.tr
         titleView.text = track.title
         val durationView = trackView.findViewById<TextView>(R.id.trackduration)
         durationView.text = DateUtil.toMmSs(track.duration)
+
+        val currentTrack = lydbok!!.currentTrack
+
+        val backgroundColor = when {
+            track.isBefore(currentTrack) -> Color.LTGRAY
+            track.isAfter(currentTrack) -> Color.WHITE
+            else -> Color.YELLOW
+        }
+
+        trackView.setBackgroundColor(backgroundColor)
+
         return trackView
     }
 
-    fun setTracls(tracks: Tracks) {
-        this.tracks = tracks
+    fun setLydbok(lydbok: Lydbok) {
+        this.lydbok = lydbok
+        notifyDataSetChanged()
     }
 
-    override fun getItem(position: Int) = tracks[position]
+    override fun getItem(position: Int) = lydbok!!.tracks[position]
 }

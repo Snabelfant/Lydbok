@@ -10,9 +10,16 @@ class Lydbok(
     val lydbokDir: File
 ) {
     val duration = tracks.duration()
+    val currentOffset: Int
+        get() = with(config.currentPosition) { track.startTime + offset }
+
+    val currentTrack = config.currentPosition.track
+
     var isSelected: Boolean
         get() = config.isSelected
         set(isSelected) {
             config.isSelected = isSelected
         }
+
+    override fun toString() = title
 }
