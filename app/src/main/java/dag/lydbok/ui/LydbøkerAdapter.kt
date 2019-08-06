@@ -25,7 +25,7 @@ class LydbøkerAdapter(context: Context) : ArrayAdapter<Lydbok>(context, R.layou
         val titleView = lydbokView.findViewById<TextView>(R.id.lydboktitle)
         titleView.text = lydbok.title
         val positionView = lydbokView.findViewById<TextView>(R.id.lydbokposition)
-        positionView.text = DateUtil.toMmSs(lydbok.currentOffset)
+        positionView.text = DateUtil.toMmSs(lydbok.currentLydbokOffset)
         val durationView = lydbokView.findViewById<TextView>(R.id.lydbokduration)
         durationView.text = DateUtil.toMmSs(lydbok.duration)
         return lydbokView

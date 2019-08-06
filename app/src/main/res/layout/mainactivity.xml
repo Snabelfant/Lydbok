@@ -15,6 +15,7 @@
             android:id="@+id/lydbokspinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
             android:spinnerMode="dropdown"/>
 
     <View
@@ -40,73 +41,60 @@
 
         <View
                 android:id="@+id/player_horizontal_rule2"
-                android:layout_width="fill_parent"
+                android:layout_width="match_parent"
                 android:layout_height="2dp"
                 android:layout_alignParentTop="true"
+                android:paddingTop="15dp"
+                android:paddingBottom="5dp"
                 android:background="#FF00FF00"/>
 
         <RelativeLayout
-                android:id="@+id/playerlocalprogress"
+                android:id="@+id/playertrackprogress"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingTop="5dp"
                 android:layout_below="@+id/player_horizontal_rule2"
                 android:orientation="horizontal">
 
             <SeekBar
-                    android:id="@+id/playerlocalseekbar"
+                    android:id="@+id/playertrackseekbar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"/>
 
             <TextView
-                    android:id="@+id/playerlocalcurrentposition"
+                    android:id="@+id/playertrackcurrentposition"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_below="@+id/playerlocalseekbar"
-                    android:layout_alignParentStart="true"/>
+                    android:layout_below="@+id/playertrackseekbar"
+                    android:layout_alignParentStart="true"
+                    android:text="mm:ss"/>
 
             <TextView
-                    android:id="@+id/playerlocalduration"
+                    android:id="@+id/playertrackduration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_below="@+id/playerlocalseekbar"
-                    android:layout_alignParentEnd="true"/>
+                    android:layout_below="@+id/playertrackseekbar"
+                    android:layout_alignParentEnd="true"
+                    android:text="mm:ss"/>
 
         </RelativeLayout>
 
         <RelativeLayout
-                android:id="@+id/playertotalprogress"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@+id/playerlocalprogress"
-                android:orientation="horizontal">
-
-            <SeekBar
-                    android:id="@+id/playertotalseekbar"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-
-            <TextView
-                    android:id="@+id/playertotalcurrentposition"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/playertotalseekbar"
-                    android:layout_alignParentStart="true"/>
-
-            <TextView
-                    android:id="@+id/playertotalduration"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@+id/playertotalseekbar"
-                    android:layout_alignParentEnd="true"/>
-
-        </RelativeLayout>
-
-        <RelativeLayout
-                android:id="@+id/player_buttons"
+                android:id="@+id/playertrackbuttons"
                 android:layout_width="wrap_content"
                 android:layout_height="55dp"
-                android:layout_below="@+id/playertotalprogress"
+                android:paddingTop="@dimen/activity_vertical_margin"
+                android:paddingBottom="@dimen/activity_vertical_margin"
+                android:layout_below="@+id/playertrackprogress"
+                android:gravity="center"
                 android:orientation="horizontal">
+
+            <Button
+                    android:id="@+id/playerprevioustrack"
+                    android:layout_width="@dimen/player_button_narrow_width"
+                    android:layout_height="match_parent"
+                    android:layout_toStartOf="@+id/playerbackwardpct"
+                    android:text="-&lt;"/>
 
             <Button
                     android:id="@+id/playerbackwardpct"
@@ -141,17 +129,17 @@
                     android:id="@+id/playerforwardpct"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
-                    android:layout_toLeftOf="@+id/playerstop"
+                    android:layout_toStartOf="@+id/playernexttrack"
                     android:text="+%"/>
 
             <Button
-                    android:id="@+id/playerstop"
+                    android:id="@+id/playernexttrack"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_alignParentRight="true"
-                    android:text="X"/>
-        </RelativeLayout>
+                    android:text="+>"/>
 
+        </RelativeLayout>
 
     </RelativeLayout>
 

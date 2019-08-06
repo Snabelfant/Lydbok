@@ -3,6 +3,7 @@ package dag.lydbok
 import android.content.*
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PersistableBundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
 import dag.lydbok.audioplayer.AudioPlayerCommands
@@ -18,26 +19,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var lydbokViewModel: LydbokViewModel
     private lateinit var playerUi: PlayerUi
 
-    private val currentPositionReceiver = object : BroadcastReceiver() {
+    private val playbackStatusReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            playerUi.updatePosition(intent.getIntExtra("currentposition", 0), intent.getIntExtra("duration", 0))
+            playerUi.updatePlaybackStatus(
+                intent.getIntExtra("currentposition", 0),
+                intent.getBooleanExtra("playing", false)
+            )
         }
     }
 
     private val playbackCompletedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            playerUi.disable()
-            lydbokViewModel.setPlayingCompleted()
+            lydbokViewModel.playNext()
             Logger.info("Ferdig spilt")
-            lydbokViewModel.save()
-        }
-    }
-
-    private val playbackStoppedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            playerUi.disable()
-            lydbokViewModel.stopPlaying()
-            Logger.info("Stoppet")
+            lydbokViewModel.saveAll()
         }
     }
 
@@ -66,17 +61,42 @@ class MainActivity : AppCompatActivity() {
         }
 
         AudioPlayerCommands(this).apply {
-            registerCurrentPositionReceiver(currentPositionReceiver)
+            registerPlaybackStatusReceiver(playbackStatusReceiver)
             registerPlaybackCompletedReceiver(playbackCompletedReceiver)
-            registerPlaybackStoppedReceiver(playbackStoppedReceiver)
         }
 
         lydbokViewModel = ViewModelProviders.of(this).get(LydbokViewModel::class.java)
-        playerUi = PlayerUi(this)
-        LydbokUi.build(this, playerUi, lydbokViewModel)
+        playerUi = PlayerUi(this, lydbokViewModel)
+        LydbokUi.build(this, lydbokViewModel)
         val playerIntent = Intent(this, AudioPlayerService::class.java)
         val bound = bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE)
         Logger.info("BindService $bound")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
+        super.onSaveInstanceState(outState, outPersistentState)
+        outState.putBoolean("serviceStatus", serviceBound)
+    }
+
+    override fun onPause() {
+        Logger.info("Pause")
+        super.onPause()
+        lydbokViewModel.saveAll()
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        serviceBound = savedInstanceState.getBoolean("serviceStatus")
+    }
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Logger.info("Destroy $serviceBound")
+        if (serviceBound) {
+            unbindService(serviceConnection)
+            audioPlayerService.stopSelf()
+        }
     }
 
 }

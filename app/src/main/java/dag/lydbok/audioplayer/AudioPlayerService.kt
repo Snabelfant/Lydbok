@@ -11,21 +11,24 @@ import android.os.Binder
 import android.os.IBinder
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyManager
-import android.util.Log
-
+import com.fasterxml.jackson.core.type.TypeReference
+import dag.lydbok.util.JsonMapper
+import dag.lydbok.util.Logger
 import java.io.IOException
 
 class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener,
     MediaPlayer.OnErrorListener, AudioManager.OnAudioFocusChangeListener {
     private val iBinder = LocalBinder()
     private var currentFileName: String? = null
-    private var mediaPlayer: MediaPlayer? = null
     private var resumePosition: Int = 0
+    private var mediaPlayer: MediaPlayer? = null
     private var audioManager: AudioManager? = null
     private var ongoingCall = false
     private var phoneStateListener: PhoneStateListener? = null
     private var telephonyManager: TelephonyManager? = null
     private var currentPositionBroadcaster: CurrentPositionBroadcaster? = null
+    private var trackFiles: List<String>? = null
+    private var currentTrackFile: String? = null
     private val becomingNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             log("becomingNoisyReceiver $intent")
@@ -33,28 +36,31 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         }
     }
 
-
-    private val playNewAudioReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            currentFileName = intent.getStringExtra("filename")
-            log("playNewAudio " + currentFileName!!)
-
+    private val setTrackFilesReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
             stopMedia()
-            initMediaPlayer()
+            trackFiles =
+                JsonMapper().read(intent!!.getStringExtra("trackfiles"), object : TypeReference<List<String>>() {})
+            currentTrackFile = intent!!.getStringExtra("currenttrackfile")
+            Logger.info("Valg sporliste=${trackFiles!!.size}, $currentTrackFile")
         }
     }
 
-    private val pauseOrResumeReceiver = object : BroadcastReceiver() {
+    private val playNewPauseOrResumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("pauseOrResume/gjenoppta broadcast $intent")
-            pauseOrResumeMedia()
-        }
-    }
+            val newFileName = intent.getStringExtra("filename")
 
-    private val stopReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            log("Stopp $intent")
-            stopMedia()
+            if (newFileName == currentFileName) {
+                log("Ny fil, men samme som spilles nå: $currentFileName")
+                pauseOrResumeMedia()
+            } else {
+                currentFileName = newFileName
+                resumePosition = intent.getIntExtra("offset", 0)
+                log("playNewPauseOrResume ${currentFileName!!}/$resumePosition")
+
+                stopMedia()
+                initMediaPlayer()
+            }
         }
     }
 
@@ -103,38 +109,19 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         return iBinder
     }
 
-    override fun onUnbind(intent: Intent): Boolean {
-        return super.onUnbind(intent)
-    }
-
     override fun onCreate() {
         super.onCreate()
         log("OnCreate")
-        currentPositionBroadcaster = CurrentPositionBroadcaster(1000, { sendCurrentPosition() })
-
         callStateListener()
 
         registerReceiver(becomingNoisyReceiver, AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        registerReceiver(playNewAudioReceiver, AudioPlayerCommands.INTENT_PLAYNEWAUDIO)
-        registerReceiver(pauseOrResumeReceiver, AudioPlayerCommands.INTENT_PAUSEORRESUME)
-        registerReceiver(stopReceiver, AudioPlayerCommands.INTENT_STOP)
+        registerReceiver(setTrackFilesReceiver, AudioPlayerCommands.INTENT_IN_TRACKFILES)
+        registerReceiver(playNewPauseOrResumeReceiver, AudioPlayerCommands.INTENT_PLAYNEWPAUSEORRESUME)
         registerReceiver(forwardSecsReceiver, AudioPlayerCommands.INTENT_FORWARDSECS)
         registerReceiver(forwardPctReceiver, AudioPlayerCommands.INTENT_FORWARDPCT)
         registerReceiver(backwardSecsReceiver, AudioPlayerCommands.INTENT_BACKWARDSECS)
         registerReceiver(backwardPctReceiver, AudioPlayerCommands.INTENT_BACKWARDPCT)
         registerReceiver(seekToReceiver, AudioPlayerCommands.INTENT_SEEKTO)
-    }
-
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        log("OnStartCommand " + intent.getStringExtra("filename"))
-        currentFileName = intent.getStringExtra("filename")
-
-        if (!requestAudioFocus()) {
-            stopSelf()
-        }
-
-        initMediaPlayer()
-        return super.onStartCommand(intent, flags, startId)
     }
 
     override fun onDestroy() {
@@ -150,9 +137,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         phoneStateListener?.run { telephonyManager?.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE) }
 
         unregisterReceiver(becomingNoisyReceiver)
-        unregisterReceiver(playNewAudioReceiver)
-        unregisterReceiver(pauseOrResumeReceiver)
-        unregisterReceiver(stopReceiver)
+        unregisterReceiver(playNewPauseOrResumeReceiver)
         unregisterReceiver(forwardSecsReceiver)
         unregisterReceiver(forwardPctReceiver)
         unregisterReceiver(backwardSecsReceiver)
@@ -194,31 +179,28 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
     }
 
     override fun onError(mp: MediaPlayer, what: Int, extra: Int): Boolean {
-        log("OnError $what/$mp")
+        log("OnError $what/$extra")
         when (what) {
-            MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK -> Log.e(
-                "MediaPlayer Error",
+            MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK -> logE(
                 "MEDIA ERROR NOT VALID FOR PROGRESSIVE PLAYBACK $extra"
             )
-            MediaPlayer.MEDIA_ERROR_SERVER_DIED -> Log.e("MediaPlayer Error", "MEDIA ERROR SERVER DIED $extra")
-            MediaPlayer.MEDIA_ERROR_UNKNOWN -> Log.e("MediaPlayer Error", "MEDIA ERROR UNKNOWN $extra")
+            MediaPlayer.MEDIA_ERROR_SERVER_DIED -> logE("MEDIA ERROR SERVER DIED $extra")
+            MediaPlayer.MEDIA_ERROR_UNKNOWN -> logE("MEDIA ERROR UNKNOWN $extra")
         }
         return false
     }
 
     override fun onPrepared(mp: MediaPlayer) {
         log("OnPrepared " + mediaPlayer!!)
-        playMedia()
-    }
-
-    private fun requestAudioFocus(): Boolean {
-        log("requestAudioFocus")
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        return AudioManager.AUDIOFOCUS_REQUEST_GRANTED == audioManager?.requestAudioFocus(
-            this,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
+        mediaPlayer!!.run {
+            if (!isPlaying) {
+                seekTo(resumePosition)
+                start()
+                currentPositionBroadcaster = CurrentPositionBroadcaster(1000) { sendPlaybackStatus() }
+                currentPositionBroadcaster!!.start()
+                sendPlaybackStatus()
+            }
+        }
     }
 
     private fun removeAudioFocus() {
@@ -251,9 +233,9 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
     }
 
     private fun seekTo(position: Int) {
-        log("-> $position")
+        log("Flytt til $position")
         mediaPlayer!!.seekTo(position)
-        sendCurrentPosition()
+        sendPlaybackStatus()
     }
 
     private fun forwardSecs(secs: Int) {
@@ -265,7 +247,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
             mediaPlayer!!.seekTo(newPosition)
         }
 
-        sendCurrentPosition()
+        sendPlaybackStatus()
     }
 
     private fun forwardPct(pct: Int) {
@@ -275,7 +257,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         log("+%$pct p=$newPosition")
         mediaPlayer!!.seekTo(newPosition)
 
-        sendCurrentPosition()
+        sendPlaybackStatus()
     }
 
     private fun backwardSecs(secs: Int) {
@@ -287,7 +269,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
             mediaPlayer!!.seekTo(newPosition)
         }
 
-        sendCurrentPosition()
+        sendPlaybackStatus()
     }
 
     private fun backwardPct(pct: Int) {
@@ -296,18 +278,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         log("-%$pct p=$newPosition")
         mediaPlayer!!.seekTo(newPosition)
 
-        sendCurrentPosition()
-    }
-
-    private fun playMedia() {
-        log("PlayMedia ${mediaPlayer!!.isPlaying}")
-        mediaPlayer!!.run {
-            if (!isPlaying) {
-                start()
-                currentPositionBroadcaster!!.start()
-                sendCurrentPosition()
-            }
-        }
+        sendPlaybackStatus()
     }
 
     private fun stopMedia() {
@@ -377,22 +348,28 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         this.registerReceiver(receiver, filter)
     }
 
-    private fun sendCurrentPosition() {
+    private fun sendPlaybackStatus() {
         val intent = Intent()
-        intent.action = AudioPlayerCommands.INTENT_CURRENTPOSITION
+        intent.action = AudioPlayerCommands.INTENT_PLAYBACKSTATUS
         intent.putExtra("currentposition", mediaPlayer!!.currentPosition)
-        intent.putExtra("duration", mediaPlayer!!.duration)
+        intent.putExtra("playing", mediaPlayer!!.isPlaying)
+//        log("Avspilling nå: ${mediaPlayer!!.currentPosition}/${mediaPlayer!!.isPlaying} $currentFileName")
+
         sendBroadcast(intent)
     }
 
     private fun sendPlaybackCompleted() {
         val intent = Intent()
-        intent.action = AudioPlayerCommands.INTENT_COMPLETED
+        intent.action = AudioPlayerCommands.INTENT_PLAYBACKCOMPLETED
         sendBroadcast(intent)
     }
 
     private fun log(s: String) {
-        Log.i("ZZZ", "AudioPlayerService $s")
+        Logger.info("AudioPlayerService $s")
+    }
+
+    private fun logE(s: String) {
+        Logger.error("AudioPlayerService $s")
     }
 
     inner class LocalBinder : Binder() {

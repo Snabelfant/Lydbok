@@ -39,4 +39,7 @@ class JsonMapper {
     @Throws(IOException::class)
     fun <T> read(inputStream: InputStream, typeReference: TypeReference<T>): T =
         objectMapper.readValue(inputStream, typeReference)
+
+    fun <T> read(s: String, typeReference: TypeReference<T>): T =
+        objectMapper.readValue(s, typeReference)
 }

@@ -1,6 +1,6 @@
 <resources>
-    <dimen name="player_button_narrow_width">56dp</dimen>
-    <dimen name="player_button_wide_width">66dp</dimen>
+    <dimen name="player_button_narrow_width">49dp</dimen>
+    <dimen name="player_button_wide_width">62dp</dimen>
     <dimen name="activity_horizontal_margin">5dp</dimen>
     <dimen name="activity_vertical_margin">5dp</dimen>
 </resources>

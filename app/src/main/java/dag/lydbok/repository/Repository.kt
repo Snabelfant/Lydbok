@@ -1,10 +1,7 @@
 package dag.lydbok.repository
 
 import androidx.lifecycle.MutableLiveData
-import dag.lydbok.model.Lydbok
-import dag.lydbok.model.Lydbøker
-import dag.lydbok.model.setSelected
-import dag.lydbok.util.Logger
+import dag.lydbok.model.*
 import dag.lydbok.util.getDuration
 import java.io.File
 
@@ -18,32 +15,22 @@ object Repository {
         private set
 
     fun open(appDir: File) {
-        if (isOpened) {
-            Logger.info("Repo allerede åpnet")
-            return
+        if (!isOpened) {
+            this.appDir = appDir
+            lydbøker = LydbøkerBuilder.build(appDir) { file -> file.getDuration() }
+            liveLydbøker = MutableLiveData(lydbøker)
+            isOpened = true
         }
-        this.appDir = appDir
-
-        lydbøker = LydbøkerBuilder.build(appDir) { file -> file.getDuration() }
-        liveLydbøker = MutableLiveData(lydbøker)
-        isOpened = true
     }
 
 
-    fun save() = lydbøker.forEach { ConfigStorage.save(it.lydbokDir, it.config) }
+    fun saveAll() = lydbøker.forEach { save(it) }
+    fun saveSelected() = save(lydbøker.getSelected())
+
+    private fun save(lydbok: Lydbok) = ConfigStorage.save(lydbok.lydbokDir, lydbok.config)
 
     private fun signalLydbokChanged() {
         liveLydbøker.postValue(lydbøker)
-    }
-
-    fun setLydbokCompleted() {
-//        podcasts.setPlayingCompleted()
-//        signalPodcastUpdate()
-    }
-
-
-    fun stopPlaying() {
-//        signalPlayingStopped()
     }
 
     fun selectLydbok(lydbok: Lydbok) {
@@ -51,4 +38,21 @@ object Repository {
         signalLydbokChanged()
     }
 
+    fun setPlaying(track: Track) {
+        with(lydbøker.getSelected()) {
+            currentTrack = track
+            save(this)
+        }
+        signalLydbokChanged()
+    }
+
+    fun updateTrackPosition(currentTrackOffset: Int) {
+        lydbøker.getSelected().currentTrackOffset = currentTrackOffset
+    }
+
+    fun playNext() {
+        lydbøker.getSelected().nextTrack()
+        signalLydbokChanged()
+    }
 }
+

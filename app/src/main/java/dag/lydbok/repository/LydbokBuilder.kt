@@ -9,8 +9,7 @@ object LydbokBuilder {
     fun build(lydbokDir: File, duration: AudioFileDuration): Lydbok {
         val title = lydbokDir.name
         val tracks = TracksBuilder.build(lydbokDir, duration)
-        val points = PointsBuilder.build(tracks)
         val config = ConfigStorage.load(lydbokDir, tracks)
-        return Lydbok(title, tracks, points, config, lydbokDir)
+        return Lydbok(title, tracks, config, lydbokDir)
     }
 }

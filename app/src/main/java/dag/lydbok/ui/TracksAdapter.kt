@@ -28,13 +28,7 @@ class TracksAdapter(context: Context) : ArrayAdapter<Track>(context, R.layout.tr
         durationView.text = DateUtil.toMmSs(track.duration)
 
         val currentTrack = lydbok!!.currentTrack
-
-        val backgroundColor = when {
-            track.isBefore(currentTrack) -> Color.LTGRAY
-            track.isAfter(currentTrack) -> Color.WHITE
-            else -> Color.YELLOW
-        }
-
+        val backgroundColor = if (track === currentTrack) 0xFFFFFFCC.toInt() else Color.WHITE
         trackView.setBackgroundColor(backgroundColor)
 
         return trackView
