@@ -10,10 +10,11 @@ import java.io.File
 
 
 class AudioPlayerCommands(private val context: Context) {
-    fun setTrackFiles(tracksFiles: List<String>, currentTrackFile: String) {
+    fun setTrackFiles(tracksFiles: List<String>, currentTrackFile: String, resumePosition: Int) {
         val intent = Intent(INTENT_IN_TRACKFILES)
         intent.putExtra("trackfiles", JsonMapper().write(tracksFiles))
         intent.putExtra("currenttrackfile", currentTrackFile)
+        intent.putExtra("resumeposition", resumePosition)
         context.sendBroadcast(intent)
     }
 
