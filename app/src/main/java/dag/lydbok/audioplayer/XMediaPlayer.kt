@@ -6,6 +6,7 @@ import java.util.*
 
 
 typealias CurrentPositionCallback = (currentPosition: Int, isPlaying: Boolean) -> Unit
+typealias NewFilePlayingCallback = (fileName: String) -> Unit
 
 object XMediaPlayer {
     private var mediaPlayer: MediaPlayer? = null
@@ -13,70 +14,112 @@ object XMediaPlayer {
     private lateinit var currentTrack: String
     private var resumePosition = 0
     private lateinit var currentPositionBroadcaster: CurrentPositionBroadcaster
+    private lateinit var currentPositionCallback: CurrentPositionCallback
+    private lateinit var newFilePlayingCallback: NewFilePlayingCallback
 
     fun prepare(
         trackFiles: List<String>,
         currentTrack: String,
         resumePosition: Int,
-        currentPositionCallback: CurrentPositionCallback
+        currentPositionCallback: CurrentPositionCallback,
+        newFilePlayingCallback: NewFilePlayingCallback
     ) {
         this.trackFiles = trackFiles
         this.currentTrack = currentTrack
         this.resumePosition = resumePosition
         currentPositionBroadcaster = CurrentPositionBroadcaster(1000, currentPositionCallback)
         currentPositionCallback(resumePosition, false)
-        prepareTrack()
+        this.currentPositionCallback = currentPositionCallback
+        this.newFilePlayingCallback = newFilePlayingCallback
+        prepareTrack(false)
     }
 
     fun pauseOrResume() {
-        mediaPlayer ?: return
+        log("PauseOrResume")
 
-        if (mediaPlayer!!.isPlaying) pause() else resume()
+        if (mediaPlayer == null || !mediaPlayer!!.isPlaying) {
+            resume()
+        } else {
+            pause()
+        }
     }
 
     private fun resume() {
-        prepareTrack()
+        log("Resume ")
+        prepareTrack(true)
         currentPositionBroadcaster.start()
         mediaPlayer!!.start()
     }
 
+    fun forwardSecs(secs: Int) {
+        log("ForwardSecs $secs")
+        val millis = secs * 1000
+        val newPosition = mediaPlayer!!.currentPosition + millis
+        log("Forward $millis p=$newPosition")
+        if (newPosition + millis < mediaPlayer!!.duration) {
+            mediaPlayer!!.seekTo(newPosition)
+            currentPositionCallback(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+        }
+    }
+
+    fun forwardTrack() {
+        findNextTrack()?.let {
+            currentTrack = it
+            resumePosition = 0
+            newFilePlayingCallback(currentTrack)
+            prepareTrack(true)
+        }
+    }
+
     fun release() {
+        log("Release")
         currentPositionBroadcaster.stop()
         mediaPlayer?.release()
     }
 
     private fun pause() {
+        log("Pause ${mediaPlayer?.isPlaying}")
         resumePosition = mediaPlayer!!.currentPosition
         release()
     }
 
-    private fun prepareTrack() {
+    private fun prepareTrack(startPlaying: Boolean) {
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer()
         }
 
         mediaPlayer!!.apply {
             setOnErrorListener(createOnErrorListener())
-            setOnPreparedListener(createOnPreparedListener())
-            setOnCompletionListener { }
+            setOnPreparedListener(createOnPreparedListener(startPlaying))
+            setOnCompletionListener(createOnCompletionListener())
             reset()
             setDataSource(currentTrack)
+            log("Prepare $currentTrack")
             prepareAsync()
         }
     }
 
     private fun createOnCompletionListener() = MediaPlayer.OnCompletionListener {
         val nextTrack = findNextTrack()
+        log("Ferdig $currentTrack neste $nextTrack")
+
         if (nextTrack != null) {
             currentTrack = nextTrack
             resumePosition = 0
+            newFilePlayingCallback(currentTrack)
+            prepareTrack(true)
+        } else {
+            currentPositionBroadcaster.stop()
+            release()
         }
-
     }
 
-    private fun createOnPreparedListener() = MediaPlayer.OnPreparedListener {
+    private fun createOnPreparedListener(startPlaying: Boolean) = MediaPlayer.OnPreparedListener {
         log("OnPrepared " + mediaPlayer)
         mediaPlayer!!.seekTo(resumePosition)
+        mediaPlayer!!.start()
+        if (!startPlaying)
+            mediaPlayer!!.stop()
     }
 
 
@@ -88,6 +131,7 @@ object XMediaPlayer {
             )
             MediaPlayer.MEDIA_ERROR_SERVER_DIED -> logE("MEDIA ERROR SERVER DIED $extra")
             MediaPlayer.MEDIA_ERROR_UNKNOWN -> logE("MEDIA ERROR UNKNOWN $extra")
+            else -> logE("MediaPlayer OnError $what $extra")
         }
         false
     }
@@ -128,3 +172,4 @@ object XMediaPlayer {
         }
 
     }
+}

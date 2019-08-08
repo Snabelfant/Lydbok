@@ -30,7 +30,7 @@ constructor(application: Application) : AndroidViewModel(application) {
 
     fun selectLydbok(lydbok: Lydbok) {
         Repository.selectLydbok(lydbok)
-        audioPlayerCommands.setTrackFiles(lydbok.trackFiles, lydbok.currentTrackFile)
+        audioPlayerCommands.setTrackFiles(lydbok.trackFiles, lydbok.currentTrackFile, lydbok.currentTrackOffset)
     }
 
     fun updateTrackPosition(currentPosition: Int) {

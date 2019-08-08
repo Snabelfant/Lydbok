@@ -6,65 +6,60 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
-import android.media.MediaPlayer
 import android.os.Binder
 import android.os.IBinder
 import com.fasterxml.jackson.core.type.TypeReference
 import dag.lydbok.util.JsonMapper
 import dag.lydbok.util.Logger
-import java.io.IOException
 
-class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener,
-    MediaPlayer.OnErrorListener, AudioManager.OnAudioFocusChangeListener {
+class AudioPlayerService : Service() {
     private val iBinder = LocalBinder()
-    private var UTcurrentFileName: String? = null
-    private var UTresumePosition: Int = 0
-    private var UTmediaPlayer: MediaPlayer? = null
-    private var mediaPlayer: MediaPlayer? = null
     private var audioManager: AudioManager? = null
-    private var currentPositionBroadcaster: CurrentPositionBroadcaster? = null
+
+    private val currentPositionCallback: CurrentPositionCallback = { currentPosition, isPlaying ->
+        val intent = Intent().apply {
+            action = AudioPlayerCommands.INTENT_PLAYBACKSTATUS
+            putExtra("currentposition", currentPosition)
+            putExtra("playing", isPlaying)
+//            log("Avspilling nå: $currentPosition/$isPlaying")
+        }
+
+        sendBroadcast(intent)
+    }
+
+    private val newFilePlayingCallback: NewFilePlayingCallback = { fileName ->
+        log("Ny fil spilles: $fileName")
+    }
 
     private val setTrackFilesReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val trackFiles =
                 JsonMapper().read(intent!!.getStringExtra("trackfiles"), object : TypeReference<List<String>>() {})
             val currentTrackFile = intent.getStringExtra("currenttrackfile")
-            val resumePosition = intent.getIntExtra("resumeposition")
-            Logger.info("Valg sporliste=${trackFiles!!.size}, $currentTrackFile, $resumePosition")
+            val resumePosition = intent.getIntExtra("resumeposition", 0)
+            Logger.info("Valg sporliste=${trackFiles.size}, $currentTrackFile, $resumePosition")
 
-            XMediaPlayer.prepare(trackFiles, currentTrackFile, resumePosition)
-            prepareMediaPlayer()
-            if (mediaPlayer.isPlaying) mediaPlayer.stop()
-
-            stopMedia()
-
+            XMediaPlayer.prepare(
+                trackFiles,
+                currentTrackFile,
+                resumePosition,
+                currentPositionCallback,
+                newFilePlayingCallback
+            )
         }
     }
 
-    private fun prepareMediaPlayer() {
-        if (mediaPlayer == null) {
-            mediaPlayer = MediaPlayer()
-        }
-
-        mediaPlayer!!.reset()
-
-    }
 
     private val pauseOrResumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val newFileName = intent.getStringExtra("filename")
+            XMediaPlayer.pauseOrResume()
+        }
+    }
 
-            if (newFileName == UTcurrentFileName) {
-                log("Ny fil, men samme som spilles nå: $UTcurrentFileName")
-                pauseOrResumeMedia()
-            } else {
-                UTcurrentFileName = newFileName
-                UTresumePosition = intent.getIntExtra("offset", 0)
-                log("playNewPauseOrResume ${UTcurrentFileName!!}/$UTresumePosition")
-
-                stopMedia()
-                initMediaPlayer()
-            }
+    private val forwardTrackReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            log("+> broadcast $intent")
+            XMediaPlayer.forwardTrack()
         }
     }
 
@@ -72,7 +67,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         override fun onReceive(context: Context, intent: Intent) {
             log("+s broadcast $intent")
             val secs = intent.getIntExtra("secs", 0)
-            forwardSecs(secs)
+            XMediaPlayer.forwardSecs(secs)
         }
     }
 
@@ -80,7 +75,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         override fun onReceive(context: Context, intent: Intent) {
             log("+% broadcast $intent")
             val pct = intent.getIntExtra("pct", 0)
-            forwardPct(pct)
+//            forwardPct(pct)
         }
     }
 
@@ -88,7 +83,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         override fun onReceive(context: Context, intent: Intent) {
             log("-s broadcast $intent")
             val secs = intent.getIntExtra("secs", 0)
-            backwardSecs(secs)
+//            backwardSecs(secs)
         }
     }
 
@@ -96,7 +91,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         override fun onReceive(context: Context, intent: Intent) {
             log("-% broadcast $intent")
             val pct = intent.getIntExtra("pct", 0)
-            backwardPct(pct)
+//            backwardPct(pct)
         }
     }
 
@@ -104,7 +99,7 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         override fun onReceive(context: Context, intent: Intent) {
             log("-> broadcast $intent")
             val position = intent.getIntExtra("position", 0)
-            seekTo(position)
+//            seekTo(position)
         }
     }
 
@@ -118,9 +113,10 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         log("OnCreate")
 
         registerReceiver(setTrackFilesReceiver, AudioPlayerCommands.INTENT_IN_TRACKFILES)
-        registerReceiver(pauseOrResumeReceiver, AudioPlayerCommands.INTENT_PLAYNEWPAUSEORRESUME)
-        registerReceiver(forwardSecsReceiver, AudioPlayerCommands.INTENT_FORWARDSECS)
+        registerReceiver(pauseOrResumeReceiver, AudioPlayerCommands.INTENT_IN_PAUSEORRESUME)
+        registerReceiver(forwardSecsReceiver, AudioPlayerCommands.INTENT_IN_FORWARDSECS)
         registerReceiver(forwardPctReceiver, AudioPlayerCommands.INTENT_FORWARDPCT)
+        registerReceiver(forwardTrackReceiver, AudioPlayerCommands.INTENT_IN_FORWARDTRACK)
         registerReceiver(backwardSecsReceiver, AudioPlayerCommands.INTENT_BACKWARDSECS)
         registerReceiver(backwardPctReceiver, AudioPlayerCommands.INTENT_BACKWARDPCT)
         registerReceiver(seekToReceiver, AudioPlayerCommands.INTENT_SEEKTO)
@@ -128,16 +124,8 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
 
     override fun onDestroy() {
         log("OnDestroy")
-
-
         super.onDestroy()
-        mediaPlayer.release()
-        UTmediaPlayer?.run {
-            stopMedia()
-            release()
-        }
-
-        removeAudioFocus()
+        XMediaPlayer.release()
 
         unregisterReceiver(setTrackFilesReceiver)
         unregisterReceiver(pauseOrResumeReceiver)
@@ -148,171 +136,37 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         unregisterReceiver(seekToReceiver)
     }
 
-    override fun onCompletion(mp: MediaPlayer) {
-        log("OnCompletion $mp")
-        stopMedia()
-        sendPlaybackCompleted()
-        stopSelf()
-    }
+//    private fun forwardPct(pct: Int) {
+//        log("+% " + UTmediaPlayer!!.isPlaying)
+//        val newPosition =
+//            UTmediaPlayer!!.currentPosition + (UTmediaPlayer!!.duration - UTmediaPlayer!!.currentPosition) * pct / 100
+//        log("+%$pct p=$newPosition")
+//        UTmediaPlayer!!.seekTo(newPosition)
+//
+//        sendPlaybackStatus()
+//    }
+//
+//    private fun backwardSecs(secs: Int) {
+//        log("-s ${UTmediaPlayer!!.isPlaying}")
+//        val millis = secs * 1000
+//        val newPosition = UTmediaPlayer!!.currentPosition - millis
+//        log("-s $millis p=$newPosition")
+//        if (newPosition >= 0) {
+//            UTmediaPlayer!!.seekTo(newPosition)
+//        }
+//
+//        sendPlaybackStatus()
+//    }
+//
+//    private fun backwardPct(pct: Int) {
+//        log("-% ${UTmediaPlayer!!.isPlaying}")
+//        val newPosition = UTmediaPlayer!!.currentPosition - UTmediaPlayer!!.currentPosition * pct / 100
+//        log("-%$pct p=$newPosition")
+//        UTmediaPlayer!!.seekTo(newPosition)
+//
+//        sendPlaybackStatus()
+//    }
 
-    override fun onAudioFocusChange(focusState: Int) {
-        log("onAudioFocusChange $focusState")
-
-        when (focusState) {
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                if (UTmediaPlayer == null) {
-                    initMediaPlayer()
-                } else {
-                    if (!UTmediaPlayer!!.isPlaying) {
-                        UTmediaPlayer!!.start()
-                    }
-                }
-                UTmediaPlayer!!.setVolume(1.0f, 1.0f)
-            }
-            AudioManager.AUDIOFOCUS_LOSS -> {
-                if (UTmediaPlayer!!.isPlaying) UTmediaPlayer!!.stop()
-                UTmediaPlayer!!.release()
-                UTmediaPlayer = null
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (UTmediaPlayer!!.isPlaying) UTmediaPlayer!!.pause()
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> if (UTmediaPlayer!!.isPlaying) UTmediaPlayer!!.setVolume(
-                0.1f,
-                0.1f
-            )
-        }
-    }
-
-
-    override fun onPrepared(mp: MediaPlayer) {
-        log("OnPrepared " + UTmediaPlayer!!)
-        UTmediaPlayer!!.run {
-            if (!isPlaying) {
-                seekTo(UTresumePosition)
-                start()
-                currentPositionBroadcaster = CurrentPositionBroadcaster(1000) { sendPlaybackStatus() }
-                currentPositionBroadcaster!!.start()
-                sendPlaybackStatus()
-            }
-        }
-    }
-
-    private fun removeAudioFocus() {
-        log("removeAudioFocus")
-        audioManager?.abandonAudioFocus(this)
-    }
-
-    private fun initMediaPlayer() {
-        log("initMediaplayer ${UTmediaPlayer}")
-        if (UTmediaPlayer == null)
-            UTmediaPlayer = MediaPlayer()
-
-        UTmediaPlayer!!.let {
-            it.setOnCompletionListener(this)
-            it.setOnErrorListener(this)
-            it.setOnPreparedListener(this)
-            it.reset()
-            it.setAudioStreamType(AudioManager.STREAM_MUSIC)
-        }
-
-        try {
-            log("Datasource=" + UTcurrentFileName!!)
-            UTmediaPlayer!!.setDataSource(UTcurrentFileName)
-        } catch (e: IOException) {
-            e.printStackTrace()
-            UTmediaPlayer!!.release()
-            stopSelf()
-        }
-
-        UTmediaPlayer!!.prepareAsync()
-    }
-
-    private fun seekTo(position: Int) {
-        log("Flytt til $position")
-        UTmediaPlayer!!.seekTo(position)
-        sendPlaybackStatus()
-    }
-
-    private fun forwardSecs(secs: Int) {
-        log("ForwardSecs ${UTmediaPlayer!!.isPlaying}")
-        val millis = secs * 1000
-        val newPosition = UTmediaPlayer!!.currentPosition + millis
-        log("Forward$millis p=$newPosition")
-        if (newPosition + millis < UTmediaPlayer!!.duration) {
-            UTmediaPlayer!!.seekTo(newPosition)
-        }
-
-        sendPlaybackStatus()
-    }
-
-    private fun forwardPct(pct: Int) {
-        log("+% " + UTmediaPlayer!!.isPlaying)
-        val newPosition =
-            UTmediaPlayer!!.currentPosition + (UTmediaPlayer!!.duration - UTmediaPlayer!!.currentPosition) * pct / 100
-        log("+%$pct p=$newPosition")
-        UTmediaPlayer!!.seekTo(newPosition)
-
-        sendPlaybackStatus()
-    }
-
-    private fun backwardSecs(secs: Int) {
-        log("-s ${UTmediaPlayer!!.isPlaying}")
-        val millis = secs * 1000
-        val newPosition = UTmediaPlayer!!.currentPosition - millis
-        log("-s $millis p=$newPosition")
-        if (newPosition >= 0) {
-            UTmediaPlayer!!.seekTo(newPosition)
-        }
-
-        sendPlaybackStatus()
-    }
-
-    private fun backwardPct(pct: Int) {
-        log("-% ${UTmediaPlayer!!.isPlaying}")
-        val newPosition = UTmediaPlayer!!.currentPosition - UTmediaPlayer!!.currentPosition * pct / 100
-        log("-%$pct p=$newPosition")
-        UTmediaPlayer!!.seekTo(newPosition)
-
-        sendPlaybackStatus()
-    }
-
-    private fun stopMedia() {
-        log("StopMedia ${UTmediaPlayer}")
-        if (UTmediaPlayer == null) return
-        log("StopMedia ${UTmediaPlayer!!.isPlaying}")
-        currentPositionBroadcaster!!.stop()
-        if (UTmediaPlayer!!.isPlaying) {
-            UTmediaPlayer!!.stop()
-        }
-
-    }
-
-    private fun pauseOrResumeMedia() {
-        log("PauseOrResumeMedia " + UTmediaPlayer!!.isPlaying)
-        if (UTmediaPlayer!!.isPlaying) {
-            UTmediaPlayer!!.pause()
-            UTresumePosition = UTmediaPlayer!!.currentPosition
-        } else {
-            UTmediaPlayer!!.seekTo(UTresumePosition)
-            UTmediaPlayer!!.start()
-        }
-    }
-
-    private fun pauseMedia() {
-        log("PauseMedia " + UTmediaPlayer!!.isPlaying)
-        if (UTmediaPlayer!!.isPlaying) {
-            UTmediaPlayer!!.pause()
-            UTresumePosition = UTmediaPlayer!!.currentPosition
-            log("PauseMedia $UTresumePosition")
-        }
-    }
-
-    private fun resumeMedia() {
-        log("ResumeMedia " + UTmediaPlayer!!.isPlaying + "/ " + UTresumePosition)
-        if (!UTmediaPlayer!!.isPlaying) {
-            UTmediaPlayer!!.seekTo(UTresumePosition)
-            UTmediaPlayer!!.start()
-        }
-    }
 
 
     private fun registerReceiver(receiver: BroadcastReceiver, action: String) {
@@ -320,15 +174,6 @@ class AudioPlayerService : Service(), MediaPlayer.OnCompletionListener, MediaPla
         this.registerReceiver(receiver, filter)
     }
 
-    private fun sendPlaybackStatus() {
-        val intent = Intent()
-        intent.action = AudioPlayerCommands.INTENT_PLAYBACKSTATUS
-        intent.putExtra("currentposition", UTmediaPlayer!!.currentPosition)
-        intent.putExtra("playing", UTmediaPlayer!!.isPlaying)
-//        log("Avspilling nå: ${UTmediaPlayer!!.currentPosition}/${UTmediaPlayer!!.isPlaying} $UTcurrentFileName")
-
-        sendBroadcast(intent)
-    }
 
     private fun sendPlaybackCompleted() {
         val intent = Intent()

@@ -18,8 +18,8 @@ class AudioPlayerCommands(private val context: Context) {
         context.sendBroadcast(intent)
     }
 
-    fun playNewPauseOrResume(file: File, offset: Int) {
-        val intent = Intent(INTENT_PLAYNEWPAUSEORRESUME)
+    fun pauseOrResume(file: File, offset: Int) {
+        val intent = Intent(INTENT_IN_PAUSEORRESUME)
         intent.putExtra("filename", file.absolutePath)
         intent.putExtra("offset", offset)
         context.sendBroadcast(intent)
@@ -31,8 +31,13 @@ class AudioPlayerCommands(private val context: Context) {
     }
 
     fun forwardSecs(secs: Int) {
-        val intent = Intent(INTENT_FORWARDSECS)
+        val intent = Intent(INTENT_IN_FORWARDSECS)
         intent.putExtra("secs", secs)
+        context.sendBroadcast(intent)
+    }
+
+    fun forwardTrack() {
+        val intent = Intent(INTENT_IN_FORWARDTRACK)
         context.sendBroadcast(intent)
     }
 
@@ -63,10 +68,11 @@ class AudioPlayerCommands(private val context: Context) {
     }
 
     companion object {
-        internal const val INTENT_IN_TRACKFILES = "dag.dag.podkast.SelectLydbok"
-        internal const val INTENT_PLAYNEWPAUSEORRESUME = "dag.dag.podkast.PlayNewPauseOrResume"
-        internal const val INTENT_FORWARDSECS = "dag.dag.podkast.ForwardSecs"
-        internal const val INTENT_FORWARDPCT = "dag.dag.podkast.ForwardPct"
+        internal const val INTENT_IN_TRACKFILES = "dag.podkast.SelectLydbok"
+        internal const val INTENT_IN_PAUSEORRESUME = "dag.podkast.PauseOrResume"
+        internal const val INTENT_IN_FORWARDSECS = "dag.podkast.ForwardSecs"
+        internal const val INTENT_FORWARDPCT = "dag.podkast.ForwardPct"
+        internal const val INTENT_IN_FORWARDTRACK = "dag.podkast.ForwardTrack"
         internal const val INTENT_BACKWARDSECS = "dag.dag.podkast.BackwardSecs"
         internal const val INTENT_BACKWARDPCT = "dag.dag.podkast.BackwardPct"
         internal const val INTENT_PLAYBACKSTATUS = "dag.dag.podkast.CurrentPosition"

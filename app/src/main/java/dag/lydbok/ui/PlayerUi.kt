@@ -11,17 +11,17 @@ import dag.lydbok.model.Lydbok
 import dag.lydbok.model.getSelected
 import dag.lydbok.util.Logger
 import dag.lydbok.viewmodel.LydbokViewModel
-import java.io.File
 
 class PlayerUi(activity: AppCompatActivity, val viewModel: LydbokViewModel) {
     private lateinit var currentLydbok: Lydbok
-    private val trackButtonPlayNewPauseOrResume: Button
+    private val trackButtonPauseOrResume: Button
     private val trackCurrentPositionView: TextView
     private val trackDurationView: TextView
     private val trackSeekBar: SeekBar
     private val audioPlayerCommands: AudioPlayerCommands
     private val trackButtonForwardSecs: Button
     private val trackButtonForwardPct: Button
+    private val trackButtonForwardTrack: Button
     private val trackButtonBackwardSecs: Button
     private val trackButtonBackwardPct: Button
 
@@ -37,34 +37,41 @@ class PlayerUi(activity: AppCompatActivity, val viewModel: LydbokViewModel) {
 
         trackButtonForwardSecs = activity.findViewById(R.id.playerforwardsecs)
         trackButtonForwardPct = activity.findViewById(R.id.playerforwardpct)
+        trackButtonForwardTrack = activity.findViewById(R.id.playerforwardtrack)
         trackButtonBackwardSecs = activity.findViewById(R.id.playerbackwardsecs)
         trackButtonBackwardPct = activity.findViewById(R.id.playerbackwardpct)
-        trackButtonPlayNewPauseOrResume = activity.findViewById(R.id.playerpauseorresume)
+        trackButtonPauseOrResume = activity.findViewById(R.id.playerpauseorresume)
 
         trackButtonBackwardPct.setOnClickListener {
-            Logger.info("Knapp bakover %")
+            Logger.info("Knapp -%")
             audioPlayerCommands.backwardPct(10)
         }
 
         trackButtonBackwardSecs.setOnClickListener {
-            Logger.info("Knapp bakover 10")
+            Logger.info("Knapp -s")
             audioPlayerCommands.backwardSecs(10)
         }
 
-        Logger.info("Knapp forover s")
-        trackButtonPlayNewPauseOrResume.setOnClickListener { _ ->
-            Logger.info("Knapp spill/pause/gjenoppta")
-            play(currentLydbok.currentTrack.trackFile, currentLydbok.currentTrackOffset)
+        Logger.info("Knapp +s")
+        trackButtonPauseOrResume.setOnClickListener { _ ->
+            Logger.info("Knapp ||/>")
+            audioPlayerCommands.pauseOrResume(currentLydbok.currentTrack.trackFile, currentLydbok.currentTrackOffset)
             viewModel.saveSelected()
         }
 
         trackButtonForwardSecs.setOnClickListener {
+            Logger.info("Knapp  +s")
             audioPlayerCommands.forwardSecs(10)
         }
 
         trackButtonForwardPct.setOnClickListener {
-            Logger.info("Knapp forover %")
+            Logger.info("Knapp  +%")
             audioPlayerCommands.forwardPct(10)
+        }
+
+        trackButtonForwardTrack.setOnClickListener {
+            Logger.info("Knapp +>")
+            audioPlayerCommands.forwardTrack()
         }
 
         viewModel.liveLydbøker.observe(activity, Observer { lydbøker ->
@@ -74,21 +81,15 @@ class PlayerUi(activity: AppCompatActivity, val viewModel: LydbokViewModel) {
                 trackSeekBar.max = currentTrack.duration
                 trackCurrentPositionView.text = currentTrack.duration.toMmSs()
                 trackDurationView.text = currentTrack.duration.toMmSs()
-                trackButtonPlayNewPauseOrResume.text = ">"
-                play(currentTrack.trackFile, currentTrackOffset)
+                trackButtonPauseOrResume.text = ">"
             }
         })
-    }
-
-    private fun play(file: File, currentTrackOffset: Int) {
-        Logger.info("Play $file")
-        audioPlayerCommands.playNewPauseOrResume(file, currentTrackOffset)
     }
 
     fun updatePlaybackStatus(currentPosition: Int, isPlaying: Boolean) {
         trackSeekBar.progress = currentPosition
         trackCurrentPositionView.text = currentPosition.toMmSs()
-        trackButtonPlayNewPauseOrResume.text = if (isPlaying) "||" else ">"
+        trackButtonPauseOrResume.text = if (isPlaying) "||" else ">"
         viewModel.updateTrackPosition(currentPosition)
     }
 

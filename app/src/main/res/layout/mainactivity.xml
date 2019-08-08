@@ -90,11 +90,11 @@
                 android:orientation="horizontal">
 
             <Button
-                    android:id="@+id/playerprevioustrack"
+                    android:id="@+id/playerbackwardtrack"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_toStartOf="@+id/playerbackwardpct"
-                    android:text="-&lt;"/>
+                    android:text="&lt;&lt;"/>
 
             <Button
                     android:id="@+id/playerbackwardpct"
@@ -116,7 +116,7 @@
                     android:layout_height="match_parent"
                     android:layout_toStartOf="@+id/playerforwardsecs"
                     android:gravity="center"
-                    android:text=">"/>
+                    android:text=">>"/>
 
             <Button
                     android:id="@+id/playerforwardsecs"
@@ -129,11 +129,11 @@
                     android:id="@+id/playerforwardpct"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
-                    android:layout_toStartOf="@+id/playernexttrack"
+                    android:layout_toStartOf="@+id/playerforwardtrack"
                     android:text="+%"/>
 
             <Button
-                    android:id="@+id/playernexttrack"
+                    android:id="@+id/playerforwardtrack"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_alignParentRight="true"
