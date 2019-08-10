@@ -41,5 +41,10 @@ class Lydbok(
     val currentTrackFile
         get() = currentTrack.trackFile.absolutePath
 
+    fun setCurrentTrack(trackFileName: String) {
+        val track = tracks.find { it.trackFile.absolutePath == trackFileName }
+        currentTrack = track!!
+    }
+
     override fun toString() = title
 }

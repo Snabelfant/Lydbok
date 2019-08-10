@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.AudioManager
 import android.os.Binder
 import android.os.IBinder
 import com.fasterxml.jackson.core.type.TypeReference
@@ -14,11 +13,10 @@ import dag.lydbok.util.Logger
 
 class AudioPlayerService : Service() {
     private val iBinder = LocalBinder()
-    private var audioManager: AudioManager? = null
 
     private val currentPositionCallback: CurrentPositionCallback = { currentPosition, isPlaying ->
         val intent = Intent().apply {
-            action = AudioPlayerCommands.INTENT_PLAYBACKSTATUS
+            action = AudioPlayerCommands.INTENT_OUT_PLAYBACKSTATUS
             putExtra("currentposition", currentPosition)
             putExtra("playing", isPlaying)
 //            log("Avspilling nå: $currentPosition/$isPlaying")
@@ -27,8 +25,14 @@ class AudioPlayerService : Service() {
         sendBroadcast(intent)
     }
 
-    private val newFilePlayingCallback: NewFilePlayingCallback = { fileName ->
-        log("Ny fil spilles: $fileName")
+    private val newTrackCallback: NewTrackCallback = { fileName ->
+        val intent = Intent().apply {
+            action = AudioPlayerCommands.INTENT_OUT_NEWTRACK
+            putExtra("trackfile", fileName)
+            log("Ny fil: $fileName")
+        }
+
+        sendBroadcast(intent)
     }
 
     private val setTrackFilesReceiver = object : BroadcastReceiver() {
@@ -44,7 +48,7 @@ class AudioPlayerService : Service() {
                 currentTrackFile,
                 resumePosition,
                 currentPositionCallback,
-                newFilePlayingCallback
+                newTrackCallback
             )
         }
     }
@@ -75,7 +79,7 @@ class AudioPlayerService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             log("+% broadcast $intent")
             val pct = intent.getIntExtra("pct", 0)
-//            forwardPct(pct)
+            XMediaPlayer.forwardPct(pct)
         }
     }
 
@@ -83,7 +87,7 @@ class AudioPlayerService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             log("-s broadcast $intent")
             val secs = intent.getIntExtra("secs", 0)
-//            backwardSecs(secs)
+            XMediaPlayer.backwardSecs(secs)
         }
     }
 
@@ -91,7 +95,7 @@ class AudioPlayerService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             log("-% broadcast $intent")
             val pct = intent.getIntExtra("pct", 0)
-//            backwardPct(pct)
+            XMediaPlayer.backwardPct(pct)
         }
     }
 
@@ -99,10 +103,9 @@ class AudioPlayerService : Service() {
         override fun onReceive(context: Context, intent: Intent) {
             log("-> broadcast $intent")
             val position = intent.getIntExtra("position", 0)
-//            seekTo(position)
+            XMediaPlayer.seekTo(position)
         }
     }
-
 
     override fun onBind(intent: Intent): IBinder? {
         return iBinder
@@ -115,11 +118,11 @@ class AudioPlayerService : Service() {
         registerReceiver(setTrackFilesReceiver, AudioPlayerCommands.INTENT_IN_TRACKFILES)
         registerReceiver(pauseOrResumeReceiver, AudioPlayerCommands.INTENT_IN_PAUSEORRESUME)
         registerReceiver(forwardSecsReceiver, AudioPlayerCommands.INTENT_IN_FORWARDSECS)
-        registerReceiver(forwardPctReceiver, AudioPlayerCommands.INTENT_FORWARDPCT)
+        registerReceiver(forwardPctReceiver, AudioPlayerCommands.INTENT_IN_FORWARDPCT)
         registerReceiver(forwardTrackReceiver, AudioPlayerCommands.INTENT_IN_FORWARDTRACK)
-        registerReceiver(backwardSecsReceiver, AudioPlayerCommands.INTENT_BACKWARDSECS)
-        registerReceiver(backwardPctReceiver, AudioPlayerCommands.INTENT_BACKWARDPCT)
-        registerReceiver(seekToReceiver, AudioPlayerCommands.INTENT_SEEKTO)
+        registerReceiver(backwardSecsReceiver, AudioPlayerCommands.INTENT_IN_BACKWARDSECS)
+        registerReceiver(backwardPctReceiver, AudioPlayerCommands.INTENT_IN_BACKWARDPCT)
+        registerReceiver(seekToReceiver, AudioPlayerCommands.INTENT_IN_SEEKTO)
     }
 
     override fun onDestroy() {
@@ -136,49 +139,9 @@ class AudioPlayerService : Service() {
         unregisterReceiver(seekToReceiver)
     }
 
-//    private fun forwardPct(pct: Int) {
-//        log("+% " + UTmediaPlayer!!.isPlaying)
-//        val newPosition =
-//            UTmediaPlayer!!.currentPosition + (UTmediaPlayer!!.duration - UTmediaPlayer!!.currentPosition) * pct / 100
-//        log("+%$pct p=$newPosition")
-//        UTmediaPlayer!!.seekTo(newPosition)
-//
-//        sendPlaybackStatus()
-//    }
-//
-//    private fun backwardSecs(secs: Int) {
-//        log("-s ${UTmediaPlayer!!.isPlaying}")
-//        val millis = secs * 1000
-//        val newPosition = UTmediaPlayer!!.currentPosition - millis
-//        log("-s $millis p=$newPosition")
-//        if (newPosition >= 0) {
-//            UTmediaPlayer!!.seekTo(newPosition)
-//        }
-//
-//        sendPlaybackStatus()
-//    }
-//
-//    private fun backwardPct(pct: Int) {
-//        log("-% ${UTmediaPlayer!!.isPlaying}")
-//        val newPosition = UTmediaPlayer!!.currentPosition - UTmediaPlayer!!.currentPosition * pct / 100
-//        log("-%$pct p=$newPosition")
-//        UTmediaPlayer!!.seekTo(newPosition)
-//
-//        sendPlaybackStatus()
-//    }
-
-
-
     private fun registerReceiver(receiver: BroadcastReceiver, action: String) {
         val filter = IntentFilter(action)
         this.registerReceiver(receiver, filter)
-    }
-
-
-    private fun sendPlaybackCompleted() {
-        val intent = Intent()
-        intent.action = AudioPlayerCommands.INTENT_PLAYBACKCOMPLETED
-        sendBroadcast(intent)
     }
 
     private fun log(s: String) {

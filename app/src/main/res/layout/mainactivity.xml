@@ -137,7 +137,7 @@
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_alignParentRight="true"
-                    android:text="+>"/>
+                    android:text=">>"/>
 
         </RelativeLayout>
 

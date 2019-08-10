@@ -1,12 +1,14 @@
 package dag.lydbok.viewmodel
 
 import android.app.Application
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import dag.lydbok.audioplayer.AudioPlayerCommands
 import dag.lydbok.model.Lydbok
 import dag.lydbok.model.Lydbøker
-import dag.lydbok.model.Track
 import dag.lydbok.repository.Repository
 import java.io.IOException
 
@@ -15,13 +17,17 @@ constructor(application: Application) : AndroidViewModel(application) {
     val liveLydbøker: LiveData<Lydbøker>
     private val audioPlayerCommands = AudioPlayerCommands(application.applicationContext)
 
+    private val newTrackReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val newTrackName = intent.getStringExtra("trackfile")
+            Repository.setPlaying(newTrackName)
+        }
+    }
+
     init {
         Repository.open(application.getExternalFilesDir(null)!!)
         liveLydbøker = Repository.liveLydbøker
-    }
-
-    fun setPlaying(track: Track) {
-        Repository.setPlaying(track)
+        audioPlayerCommands.registerNewTrackReceiver(newTrackReceiver)
     }
 
     fun saveAll() {

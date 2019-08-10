@@ -18,7 +18,7 @@ class PlayerUi(activity: AppCompatActivity, val viewModel: LydbokViewModel) {
     private val trackCurrentPositionView: TextView
     private val trackDurationView: TextView
     private val trackSeekBar: SeekBar
-    private val audioPlayerCommands: AudioPlayerCommands
+    private val audioPlayerCommands: AudioPlayerCommands = AudioPlayerCommands(activity)
     private val trackButtonForwardSecs: Button
     private val trackButtonForwardPct: Button
     private val trackButtonForwardTrack: Button
@@ -26,7 +26,6 @@ class PlayerUi(activity: AppCompatActivity, val viewModel: LydbokViewModel) {
     private val trackButtonBackwardPct: Button
 
     init {
-        audioPlayerCommands = AudioPlayerCommands(activity)
         trackCurrentPositionView = activity.findViewById(R.id.playertrackcurrentposition)
         trackDurationView = activity.findViewById(R.id.playertrackduration)
 

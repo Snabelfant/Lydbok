@@ -26,7 +26,7 @@ class AudioPlayerCommands(private val context: Context) {
     }
 
     fun seekTo(position: Int) {
-        val intent = Intent(INTENT_SEEKTO).apply { putExtra("position", position) }
+        val intent = Intent(INTENT_IN_SEEKTO).apply { putExtra("position", position) }
         context.sendBroadcast(intent)
     }
 
@@ -42,41 +42,41 @@ class AudioPlayerCommands(private val context: Context) {
     }
 
     fun forwardPct(pct: Int) {
-        val intent = Intent(INTENT_FORWARDPCT)
+        val intent = Intent(INTENT_IN_FORWARDPCT)
         intent.putExtra("pct", pct)
         context.sendBroadcast(intent)
     }
 
     fun backwardSecs(secs: Int) {
-        val intent = Intent(INTENT_BACKWARDSECS)
+        val intent = Intent(INTENT_IN_BACKWARDSECS)
         intent.putExtra("secs", secs)
         context.sendBroadcast(intent)
     }
 
     fun backwardPct(pct: Int) {
-        val intent = Intent(INTENT_BACKWARDPCT)
+        val intent = Intent(INTENT_IN_BACKWARDPCT)
         intent.putExtra("pct", pct)
         context.sendBroadcast(intent)
     }
 
     fun registerPlaybackStatusReceiver(receiver: BroadcastReceiver) {
-        context.registerReceiver(receiver, IntentFilter(INTENT_PLAYBACKSTATUS))
+        context.registerReceiver(receiver, IntentFilter(INTENT_OUT_PLAYBACKSTATUS))
     }
 
-    fun registerPlaybackCompletedReceiver(receiver: BroadcastReceiver) {
-        context.registerReceiver(receiver, IntentFilter(INTENT_PLAYBACKCOMPLETED))
+    fun registerNewTrackReceiver(receiver: BroadcastReceiver) {
+        context.registerReceiver(receiver, IntentFilter(INTENT_OUT_NEWTRACK))
     }
 
     companion object {
         internal const val INTENT_IN_TRACKFILES = "dag.podkast.SelectLydbok"
         internal const val INTENT_IN_PAUSEORRESUME = "dag.podkast.PauseOrResume"
         internal const val INTENT_IN_FORWARDSECS = "dag.podkast.ForwardSecs"
-        internal const val INTENT_FORWARDPCT = "dag.podkast.ForwardPct"
+        internal const val INTENT_IN_FORWARDPCT = "dag.podkast.ForwardPct"
         internal const val INTENT_IN_FORWARDTRACK = "dag.podkast.ForwardTrack"
-        internal const val INTENT_BACKWARDSECS = "dag.dag.podkast.BackwardSecs"
-        internal const val INTENT_BACKWARDPCT = "dag.dag.podkast.BackwardPct"
-        internal const val INTENT_PLAYBACKSTATUS = "dag.dag.podkast.CurrentPosition"
-        internal const val INTENT_PLAYBACKCOMPLETED = "dag.dag.podkast.PlaybackCompleted"
-        internal const val INTENT_SEEKTO = "dag.dag.podkast.SeekTo"
+        internal const val INTENT_IN_BACKWARDSECS = "dag.dag.podkast.BackwardSecs"
+        internal const val INTENT_IN_BACKWARDPCT = "dag.dag.podkast.BackwardPct"
+        internal const val INTENT_IN_SEEKTO = "dag.dag.podkast.SeekTo"
+        internal const val INTENT_OUT_PLAYBACKSTATUS = "dag.dag.podkast.PlaybackStatus"
+        internal const val INTENT_OUT_NEWTRACK = "dag.dag.podkast.NewFile"
     }
 }

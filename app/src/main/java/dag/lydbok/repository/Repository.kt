@@ -1,7 +1,10 @@
 package dag.lydbok.repository
 
 import androidx.lifecycle.MutableLiveData
-import dag.lydbok.model.*
+import dag.lydbok.model.Lydbok
+import dag.lydbok.model.Lydbøker
+import dag.lydbok.model.getSelected
+import dag.lydbok.model.setSelected
 import dag.lydbok.util.getDuration
 import java.io.File
 
@@ -38,9 +41,9 @@ object Repository {
         signalLydbokChanged()
     }
 
-    fun setPlaying(track: Track) {
+    fun setPlaying(tracName: String) {
         with(lydbøker.getSelected()) {
-            currentTrack = track
+            setCurrentTrack(tracName)
             save(this)
         }
         signalLydbokChanged()

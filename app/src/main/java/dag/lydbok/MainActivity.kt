@@ -62,7 +62,6 @@ class MainActivity : AppCompatActivity() {
 
         AudioPlayerCommands(this).apply {
             registerPlaybackStatusReceiver(playbackStatusReceiver)
-            registerPlaybackCompletedReceiver(playbackCompletedReceiver)
         }
 
         lydbokViewModel = ViewModelProviders.of(this).get(LydbokViewModel::class.java)
