@@ -1,12 +1,14 @@
 package dag.lydbok
 
-import android.content.*
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.os.PersistableBundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
-import dag.lydbok.audioplayer.AudioPlayerCommands
 import dag.lydbok.audioplayer.AudioPlayerService
 import dag.lydbok.ui.LydbokUi
 import dag.lydbok.ui.PlayerUi
@@ -18,23 +20,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var audioPlayerService: AudioPlayerService
     private lateinit var lydbokViewModel: LydbokViewModel
     private lateinit var playerUi: PlayerUi
-
-    private val playbackStatusReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            playerUi.updatePlaybackStatus(
-                intent.getIntExtra("currentposition", 0),
-                intent.getBooleanExtra("playing", false)
-            )
-        }
-    }
-
-    private val playbackCompletedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            lydbokViewModel.playNext()
-            Logger.info("Ferdig spilt")
-            lydbokViewModel.saveAll()
-        }
-    }
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, service: IBinder) {
@@ -58,10 +43,6 @@ class MainActivity : AppCompatActivity() {
             setLogo(R.drawable.lydbok)
             setDisplayUseLogoEnabled(true)
             setDisplayShowHomeEnabled(true)
-        }
-
-        AudioPlayerCommands(this).apply {
-            registerPlaybackStatusReceiver(playbackStatusReceiver)
         }
 
         lydbokViewModel = ViewModelProviders.of(this).get(LydbokViewModel::class.java)

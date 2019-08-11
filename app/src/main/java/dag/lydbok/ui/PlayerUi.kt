@@ -8,87 +8,108 @@ import androidx.lifecycle.Observer
 import dag.lydbok.R
 import dag.lydbok.audioplayer.AudioPlayerCommands
 import dag.lydbok.model.Lydbok
-import dag.lydbok.model.getSelected
+import dag.lydbok.model.selected
 import dag.lydbok.util.Logger
 import dag.lydbok.viewmodel.LydbokViewModel
 
 class PlayerUi(activity: AppCompatActivity, val viewModel: LydbokViewModel) {
     private lateinit var currentLydbok: Lydbok
-    private val trackButtonPauseOrResume: Button
-    private val trackCurrentPositionView: TextView
-    private val trackDurationView: TextView
-    private val trackSeekBar: SeekBar
+    private val pauseOrResumeBtn: Button
+    private val currentPositionView: TextView = activity.findViewById(R.id.playertrackcurrentposition)
+    private val durationView: TextView = activity.findViewById(R.id.playertrackduration)
+    private val seekBar: SeekBar = activity.findViewById(R.id.playertrackseekbar)
     private val audioPlayerCommands: AudioPlayerCommands = AudioPlayerCommands(activity)
-    private val trackButtonForwardSecs: Button
-    private val trackButtonForwardPct: Button
-    private val trackButtonForwardTrack: Button
-    private val trackButtonBackwardSecs: Button
-    private val trackButtonBackwardPct: Button
+    private val forwardSecsBtn: Button
+    private val forwardPctBtn: Button
+    private val forwardTrackBtn: Button
+    private val backwardSecsBtn: Button
+    private val backwardPctBtn: Button
+    private val backwardTrackBtn: Button
 
     init {
-        trackCurrentPositionView = activity.findViewById(R.id.playertrackcurrentposition)
-        trackDurationView = activity.findViewById(R.id.playertrackduration)
 
-        trackSeekBar = activity.findViewById(R.id.playertrackseekbar)
-        trackSeekBar.max = 0
-        trackSeekBar.progress = 0
-        trackSeekBar.setOnSeekBarChangeListener(TrackSeekBarChangeListener())
+        seekBar.max = 0
+        seekBar.progress = 0
+        seekBar.setOnSeekBarChangeListener(TrackSeekBarChangeListener())
 
-        trackButtonForwardSecs = activity.findViewById(R.id.playerforwardsecs)
-        trackButtonForwardPct = activity.findViewById(R.id.playerforwardpct)
-        trackButtonForwardTrack = activity.findViewById(R.id.playerforwardtrack)
-        trackButtonBackwardSecs = activity.findViewById(R.id.playerbackwardsecs)
-        trackButtonBackwardPct = activity.findViewById(R.id.playerbackwardpct)
-        trackButtonPauseOrResume = activity.findViewById(R.id.playerpauseorresume)
+        forwardSecsBtn = activity.findViewById(R.id.playerforwardsecs)
+        forwardPctBtn = activity.findViewById(R.id.playerforwardpct)
+        forwardTrackBtn = activity.findViewById(R.id.playerforwardtrack)
+        backwardSecsBtn = activity.findViewById(R.id.playerbackwardsecs)
+        backwardPctBtn = activity.findViewById(R.id.playerbackwardpct)
+        backwardTrackBtn = activity.findViewById(R.id.playerbackwardtrack)
+        pauseOrResumeBtn = activity.findViewById(R.id.playerpauseorresume)
 
-        trackButtonBackwardPct.setOnClickListener {
-            Logger.info("Knapp -%")
+        backwardPctBtn.setOnClickListener {
+            Logger.info("Knapp <%")
             audioPlayerCommands.backwardPct(10)
         }
 
-        trackButtonBackwardSecs.setOnClickListener {
-            Logger.info("Knapp -s")
+        backwardSecsBtn.setOnClickListener {
+            Logger.info("Knapp <S")
             audioPlayerCommands.backwardSecs(10)
         }
 
-        Logger.info("Knapp +s")
-        trackButtonPauseOrResume.setOnClickListener { _ ->
+        backwardTrackBtn.setOnClickListener {
+            Logger.info("Knapp <<")
+            audioPlayerCommands.backwardTrack()
+        }
+
+        pauseOrResumeBtn.setOnClickListener { _ ->
             Logger.info("Knapp ||/>")
             audioPlayerCommands.pauseOrResume(currentLydbok.currentTrack.trackFile, currentLydbok.currentTrackOffset)
             viewModel.saveSelected()
         }
 
-        trackButtonForwardSecs.setOnClickListener {
-            Logger.info("Knapp  +s")
+        forwardSecsBtn.setOnClickListener {
+            Logger.info("Knapp  >S")
             audioPlayerCommands.forwardSecs(10)
         }
 
-        trackButtonForwardPct.setOnClickListener {
-            Logger.info("Knapp  +%")
+        forwardPctBtn.setOnClickListener {
+            Logger.info("Knapp  >%")
             audioPlayerCommands.forwardPct(10)
         }
 
-        trackButtonForwardTrack.setOnClickListener {
-            Logger.info("Knapp +>")
+        forwardTrackBtn.setOnClickListener {
+            Logger.info("Knapp >>")
             audioPlayerCommands.forwardTrack()
         }
 
         viewModel.liveLydbøker.observe(activity, Observer { lydbøker ->
             Logger.info("PlayerUI: Observasjon lydbøker: $lydbøker")
-            currentLydbok = lydbøker.getSelected()
+            currentLydbok = lydbøker.selected
             with(currentLydbok) {
-                trackSeekBar.max = currentTrack.duration
-                trackCurrentPositionView.text = currentTrack.duration.toMmSs()
-                trackDurationView.text = currentTrack.duration.toMmSs()
-                trackButtonPauseOrResume.text = ">"
+                seekBar.max = currentTrack.duration
+                currentPositionView.text = currentTrack.duration.toMmSs()
+                durationView.text = currentTrack.duration.toMmSs()
+                pauseOrResumeBtn.text = ">"
             }
+        })
+
+        viewModel.livePlaybackStatus.observe(activity, Observer { status ->
+            //            Logger.info("PlayerUI: Observasjon pos: ${status.first}/${status.second}")
+            updatePlaybackStatus(status.first, status.second)
         })
     }
 
-    fun updatePlaybackStatus(currentPosition: Int, isPlaying: Boolean) {
-        trackSeekBar.progress = currentPosition
-        trackCurrentPositionView.text = currentPosition.toMmSs()
-        trackButtonPauseOrResume.text = if (isPlaying) "||" else ">"
+    private fun updatePlaybackStatus(currentPosition: Int, isPlaying: Boolean) {
+        seekBar.progress = currentPosition
+        currentPositionView.text = currentPosition.toMmSs()
+
+        if (isPlaying) {
+            pauseOrResumeBtn.text = "||"
+            forwardSecsBtn.isEnabled = true
+            forwardPctBtn.isEnabled = true
+            backwardSecsBtn.isEnabled = true
+            backwardPctBtn.isEnabled = true
+        } else {
+            pauseOrResumeBtn.text = ">"
+            forwardSecsBtn.isEnabled = false
+            forwardPctBtn.isEnabled = false
+            backwardSecsBtn.isEnabled = false
+            backwardPctBtn.isEnabled = false
+        }
         viewModel.updateTrackPosition(currentPosition)
     }
 

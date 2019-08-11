@@ -2,10 +2,12 @@ package dag.lydbok.model
 
 typealias Lydbøker = List<Lydbok>
 
-fun Lydbøker.getSelected() = this.find { it.isSelected }!!
-fun Lydbøker.getSelectedIndex() = this.indexOfFirst { it.isSelected }
-fun Lydbøker.setSelected(lydbok: Lydbok) {
-    getSelected().isSelected = false
-    lydbok.isSelected = true
-}
+var Lydbøker.selected
+    get() = this.find { it.isSelected }!!
+    set(lydbok) {
+        selected.isSelected = false
+        lydbok.isSelected = true
+    }
+
+val Lydbøker.selectedIndex get() = this.indexOfFirst { it.isSelected }
 

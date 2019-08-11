@@ -101,14 +101,14 @@
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_toStartOf="@+id/playerbackwardsecs"
-                    android:text="-%"/>
+                    android:text="&lt;%"/>
 
             <Button
                     android:id="@+id/playerbackwardsecs"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_toStartOf="@+id/playerpauseorresume"
-                    android:text="-s"/>
+                    android:text="&lt;S"/>
 
             <Button
                     android:id="@+id/playerpauseorresume"
@@ -123,14 +123,14 @@
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_toLeftOf="@+id/playerforwardpct"
-                    android:text="+s"/>
+                    android:text="S>"/>
 
             <Button
                     android:id="@+id/playerforwardpct"
                     android:layout_width="@dimen/player_button_narrow_width"
                     android:layout_height="match_parent"
                     android:layout_toStartOf="@+id/playerforwardtrack"
-                    android:text="+%"/>
+                    android:text="%>"/>
 
             <Button
                     android:id="@+id/playerforwardtrack"

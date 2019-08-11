@@ -13,6 +13,7 @@ import dag.lydbok.util.Logger
 
 class AudioPlayerService : Service() {
     private val iBinder = LocalBinder()
+    private var xMediaPlayer: XMediaPlayer? = null
 
     private val currentPositionCallback: CurrentPositionCallback = { currentPosition, isPlaying ->
         val intent = Intent().apply {
@@ -43,7 +44,8 @@ class AudioPlayerService : Service() {
             val resumePosition = intent.getIntExtra("resumeposition", 0)
             Logger.info("Valg sporliste=${trackFiles.size}, $currentTrackFile, $resumePosition")
 
-            XMediaPlayer.prepare(
+            xMediaPlayer?.release()
+            xMediaPlayer = XMediaPlayer(
                 trackFiles,
                 currentTrackFile,
                 resumePosition,
@@ -56,54 +58,61 @@ class AudioPlayerService : Service() {
 
     private val pauseOrResumeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            XMediaPlayer.pauseOrResume()
+            xMediaPlayer?.pauseOrResume()
         }
     }
 
     private val forwardTrackReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("+> broadcast $intent")
-            XMediaPlayer.forwardTrack()
+            log(">> broadcast $intent")
+            xMediaPlayer?.forwardTrack()
+        }
+    }
+
+    private val backwardTrackReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            log("<< broadcast $intent")
+            xMediaPlayer?.backwardTrack()
         }
     }
 
     private val forwardSecsReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("+s broadcast $intent")
+            log(">S broadcast $intent")
             val secs = intent.getIntExtra("secs", 0)
-            XMediaPlayer.forwardSecs(secs)
+            xMediaPlayer?.forwardSecs(secs)
         }
     }
 
     private val forwardPctReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("+% broadcast $intent")
+            log(">% broadcast $intent")
             val pct = intent.getIntExtra("pct", 0)
-            XMediaPlayer.forwardPct(pct)
+            xMediaPlayer?.forwardPct(pct)
         }
     }
 
     private val backwardSecsReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("-s broadcast $intent")
+            log("<S broadcast $intent")
             val secs = intent.getIntExtra("secs", 0)
-            XMediaPlayer.backwardSecs(secs)
+            xMediaPlayer?.backwardSecs(secs)
         }
     }
 
     private val backwardPctReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("-% broadcast $intent")
+            log("<% broadcast $intent")
             val pct = intent.getIntExtra("pct", 0)
-            XMediaPlayer.backwardPct(pct)
+            xMediaPlayer?.backwardPct(pct)
         }
     }
 
     private val seekToReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            log("-> broadcast $intent")
+            log("<-> broadcast $intent")
             val position = intent.getIntExtra("position", 0)
-            XMediaPlayer.seekTo(position)
+            xMediaPlayer?.seekTo(position)
         }
     }
 
@@ -122,20 +131,23 @@ class AudioPlayerService : Service() {
         registerReceiver(forwardTrackReceiver, AudioPlayerCommands.INTENT_IN_FORWARDTRACK)
         registerReceiver(backwardSecsReceiver, AudioPlayerCommands.INTENT_IN_BACKWARDSECS)
         registerReceiver(backwardPctReceiver, AudioPlayerCommands.INTENT_IN_BACKWARDPCT)
+        registerReceiver(backwardTrackReceiver, AudioPlayerCommands.INTENT_IN_BACKWARDTRACK)
         registerReceiver(seekToReceiver, AudioPlayerCommands.INTENT_IN_SEEKTO)
     }
 
     override fun onDestroy() {
         log("OnDestroy")
         super.onDestroy()
-        XMediaPlayer.release()
+        xMediaPlayer?.release()
 
         unregisterReceiver(setTrackFilesReceiver)
         unregisterReceiver(pauseOrResumeReceiver)
         unregisterReceiver(forwardSecsReceiver)
         unregisterReceiver(forwardPctReceiver)
+        unregisterReceiver(forwardTrackReceiver)
         unregisterReceiver(backwardSecsReceiver)
         unregisterReceiver(backwardPctReceiver)
+        unregisterReceiver(backwardTrackReceiver)
         unregisterReceiver(seekToReceiver)
     }
 

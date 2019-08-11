@@ -22,7 +22,6 @@ class Lydbok(
     var currentTrackOffset
         get() = config.currentPosition.offset
         set(offset) {
-//            Logger.info("Pos ${config.currentPosition.track.title}=$offset")
             config.currentPosition.offset = offset
         }
 
@@ -32,14 +31,13 @@ class Lydbok(
             config.isSelected = isSelected
         }
 
-    fun nextTrack() {
-        currentTrack = tracks.next(currentTrack)
-    }
-
     val trackFiles
         get() = tracks.map { it.trackFile.absolutePath }
+
     val currentTrackFile
         get() = currentTrack.trackFile.absolutePath
+
+    val currentTrackIndex get() = tracks.indexOf(currentTrack)
 
     fun setCurrentTrack(trackFileName: String) {
         val track = tracks.find { it.trackFile.absolutePath == trackFileName }

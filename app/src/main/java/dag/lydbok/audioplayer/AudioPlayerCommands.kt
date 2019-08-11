@@ -41,6 +41,11 @@ class AudioPlayerCommands(private val context: Context) {
         context.sendBroadcast(intent)
     }
 
+    fun backwardTrack() {
+        val intent = Intent(INTENT_IN_BACKWARDTRACK)
+        context.sendBroadcast(intent)
+    }
+
     fun forwardPct(pct: Int) {
         val intent = Intent(INTENT_IN_FORWARDPCT)
         intent.putExtra("pct", pct)
@@ -75,6 +80,7 @@ class AudioPlayerCommands(private val context: Context) {
         internal const val INTENT_IN_FORWARDTRACK = "dag.podkast.ForwardTrack"
         internal const val INTENT_IN_BACKWARDSECS = "dag.dag.podkast.BackwardSecs"
         internal const val INTENT_IN_BACKWARDPCT = "dag.dag.podkast.BackwardPct"
+        internal const val INTENT_IN_BACKWARDTRACK = "dag.podkast.BackwardTrack"
         internal const val INTENT_IN_SEEKTO = "dag.dag.podkast.SeekTo"
         internal const val INTENT_OUT_PLAYBACKSTATUS = "dag.dag.podkast.PlaybackStatus"
         internal const val INTENT_OUT_NEWTRACK = "dag.dag.podkast.NewFile"

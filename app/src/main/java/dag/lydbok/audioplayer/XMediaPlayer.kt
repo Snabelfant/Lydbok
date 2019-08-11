@@ -8,36 +8,22 @@ import java.util.*
 typealias CurrentPositionCallback = (currentPosition: Int, isPlaying: Boolean) -> Unit
 typealias NewTrackCallback = (fileName: String) -> Unit
 
-object XMediaPlayer {
+class XMediaPlayer(
+    private val trackFiles: List<String>, private var currentTrack: String, private var resumePosition: Int,
+    private val currentPositionCallback: CurrentPositionCallback, private val newTrackCallback: NewTrackCallback
+) {
+    private val currentPositionBroadcaster: CurrentPositionBroadcaster =
+        CurrentPositionBroadcaster(1000, currentPositionCallback)
     private var mediaPlayer: MediaPlayer? = null
-    private lateinit var trackFiles: List<String>
-    private lateinit var currentTrack: String
-    private var resumePosition = 0
-    private lateinit var currentPositionBroadcaster: CurrentPositionBroadcaster
-    private lateinit var currentPositionCallback: CurrentPositionCallback
-    private lateinit var newTrackCallback: NewTrackCallback
 
-    fun prepare(
-        trackFiles: List<String>,
-        currentTrack: String,
-        resumePosition: Int,
-        currentPositionCallback: CurrentPositionCallback,
-        newTrackCallback: NewTrackCallback
-    ) {
-        this.trackFiles = trackFiles
-        this.currentTrack = currentTrack
-        this.resumePosition = resumePosition
-        currentPositionBroadcaster = CurrentPositionBroadcaster(1000, currentPositionCallback)
+    init {
         currentPositionCallback(resumePosition, false)
-        this.currentPositionCallback = currentPositionCallback
-        this.newTrackCallback = newTrackCallback
-        prepareTrack(false)
     }
 
     fun pauseOrResume() {
-        log("PauseOrResume")
+        log("||/>")
 
-        if (mediaPlayer == null || !mediaPlayer!!.isPlaying) {
+        if (mediaPlayer == null) {
             resume()
         } else {
             pause()
@@ -45,80 +31,98 @@ object XMediaPlayer {
     }
 
     private fun resume() {
-        log("Resume ")
+        log(">")
         prepareTrack(true)
     }
 
     fun forwardSecs(secs: Int) {
-        log("ForwardSecs $secs")
+        log(">S $secs")
         val millis = secs * 1000
         val newPosition = mediaPlayer!!.currentPosition + millis
-        log("Forward $millis p=$newPosition")
+        log(">S $millis p=$newPosition")
         if (newPosition + millis < mediaPlayer!!.duration) {
             mediaPlayer!!.seekTo(newPosition)
-            currentPositionCallback(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+            currentPositionCallback(mediaPlayer!!.currentPosition, true)
         }
     }
 
     fun forwardPct(pct: Int) {
+        log(">% $mediaPlayer")
         val newPosition =
             mediaPlayer!!.currentPosition + (mediaPlayer!!.duration - mediaPlayer!!.currentPosition) * pct / 100
         log("+%$pct p=$newPosition")
         mediaPlayer!!.seekTo(newPosition)
-        currentPositionCallback(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+        currentPositionCallback(mediaPlayer!!.currentPosition, true)
+    }
+
+    fun forwardTrack() {
+        val nextTrack = findNextTrack()
+        log(">> $currentTrack neste $nextTrack")
+        nextTrack?.run {
+            currentPositionBroadcaster.stop()
+            currentTrack = this
+            resumePosition = 0
+            newTrackCallback(currentTrack)
+            prepareTrack(true)
+        }
     }
 
     fun backwardSecs(secs: Int) {
-        log("-s ${mediaPlayer!!.isPlaying}")
-        val millis = secs * 1000
-        val newPosition = mediaPlayer!!.currentPosition - millis
-        log("-s $millis p=$newPosition")
-        if (newPosition >= 0) {
-            mediaPlayer!!.seekTo(newPosition)
-            currentPositionCallback(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+        log("<S $mediaPlayer")
+
+        mediaPlayer?.run {
+            val millis = secs * 1000
+            val newPosition = this.currentPosition - millis
+            log("-s $millis p=$newPosition")
+            if (newPosition >= 0) {
+                this.seekTo(newPosition)
+                currentPositionCallback(this.currentPosition, true)
+            }
         }
     }
 
     fun backwardPct(pct: Int) {
-        log("-% ${mediaPlayer!!.isPlaying}")
+        log("<% $mediaPlayer")
         val newPosition = mediaPlayer!!.currentPosition - mediaPlayer!!.currentPosition * pct / 100
-        log("-%$pct p=$newPosition")
+        log("<%$pct p=$newPosition")
         mediaPlayer!!.seekTo(newPosition)
-        currentPositionCallback(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+        currentPositionCallback(mediaPlayer!!.currentPosition, true)
     }
 
-
-    fun forwardTrack() {
-        val nextTrack = findNextTrack()
-        log("Neste spor $currentTrack neste $nextTrack")
-        currentPositionBroadcaster.stop()
-
-        if (nextTrack != null) {
-            currentTrack = nextTrack
+    fun backwardTrack() {
+        val previousTrack = findPreviousTrack()
+        log("<< $currentTrack neste $previousTrack")
+        previousTrack?.run {
+            currentPositionBroadcaster.stop()
+            currentTrack = this
             resumePosition = 0
             newTrackCallback(currentTrack)
             prepareTrack(true)
-        } else {
-            release()
         }
     }
 
     fun seekTo(position: Int) {
-        log("Flytt til $position")
-        mediaPlayer!!.seekTo(position)
-        currentPositionCallback(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+        log("Flytt til $position $mediaPlayer")
+        mediaPlayer?.run {
+            this.seekTo(position)
+            currentPositionCallback(this.currentPosition, true)
+        }
     }
 
     fun release() {
-        log("Release")
-        currentPositionBroadcaster.stop()
-        currentPositionCallback(resumePosition, false)
-        mediaPlayer?.release()
+        log("Release $mediaPlayer")
+
+        mediaPlayer?.run {
+            currentPositionBroadcaster.stop()
+            currentPositionCallback(resumePosition, false)
+            this.release()
+        }
+
         mediaPlayer = null
     }
 
     private fun pause() {
-        log("Pause ${mediaPlayer?.isPlaying}")
+        log("||")
         resumePosition = mediaPlayer!!.currentPosition
         release()
     }
@@ -188,15 +192,15 @@ object XMediaPlayer {
 
     private fun findNextTrack() =
         with(trackFiles.indexOf(currentTrack)) {
-            if (this == trackFiles.size) null else trackFiles[this + 1]
+            if (this == trackFiles.lastIndex) null else trackFiles[this + 1]
         }
 
     private fun findPreviousTrack() =
         with(trackFiles.indexOf(currentTrack)) {
-            if (this == trackFiles.size) null else trackFiles[this + 1]
+            if (this == 0) null else trackFiles[this - 1]
         }
 
-    private class CurrentPositionBroadcaster(
+    private inner class CurrentPositionBroadcaster(
         private val intervalInMsecs: Int,
         private val handler: CurrentPositionCallback
     ) {
@@ -211,7 +215,7 @@ object XMediaPlayer {
                         handler(resumePosition, false)
                     } else {
                         try {
-                            handler(mediaPlayer!!.currentPosition, mediaPlayer!!.isPlaying)
+                            handler(mediaPlayer!!.currentPosition, true)
                         } catch (e: IllegalStateException) {
                             logE(e.toString())
                         }
@@ -227,6 +231,5 @@ object XMediaPlayer {
             timer?.cancel()
             timer?.purge()
         }
-
     }
 }

@@ -7,8 +7,8 @@ import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import dag.lydbok.R
-import dag.lydbok.model.getSelected
-import dag.lydbok.model.getSelectedIndex
+import dag.lydbok.model.selected
+import dag.lydbok.model.selectedIndex
 import dag.lydbok.util.Logger
 import dag.lydbok.viewmodel.LydbokViewModel
 
@@ -35,9 +35,17 @@ object LydbokUi {
         viewModel.liveLydbøker.observe(activity, Observer { lydbøker ->
             Logger.info("LydbokUI: Observasjon lydbøker: $lydbøker")
             lydbokSpinnerAdapter.setLydbøker(lydbøker)
-            lydbokSpinner.setSelection(lydbøker.getSelectedIndex())
-            tracksAdapter.setLydbok(lydbøker.getSelected())
+            lydbokSpinner.setSelection(lydbøker.selectedIndex)
+            tracksAdapter.setLydbok(lydbøker.selected)
+            scrollTrackList(tracksView, lydbøker.selected.currentTrackIndex)
         })
 
+
     }
+
+    private fun scrollTrackList(tracksView: ListView, trackIndex: Int) {
+        Logger.info("Scroll til $trackIndex")
+        tracksView.smoothScrollToPositionFromTop(trackIndex, 300)
+    }
+
 }

@@ -3,8 +3,7 @@ package dag.lydbok.repository
 import androidx.lifecycle.MutableLiveData
 import dag.lydbok.model.Lydbok
 import dag.lydbok.model.Lydbøker
-import dag.lydbok.model.getSelected
-import dag.lydbok.model.setSelected
+import dag.lydbok.model.selected
 import dag.lydbok.util.getDuration
 import java.io.File
 
@@ -28,7 +27,7 @@ object Repository {
 
 
     fun saveAll() = lydbøker.forEach { save(it) }
-    fun saveSelected() = save(lydbøker.getSelected())
+    fun saveSelected() = save(lydbøker.selected)
 
     private fun save(lydbok: Lydbok) = ConfigStorage.save(lydbok.lydbokDir, lydbok.config)
 
@@ -37,12 +36,12 @@ object Repository {
     }
 
     fun selectLydbok(lydbok: Lydbok) {
-        lydbøker.setSelected(lydbok)
+        lydbøker.selected = lydbok
         signalLydbokChanged()
     }
 
     fun setPlaying(tracName: String) {
-        with(lydbøker.getSelected()) {
+        with(lydbøker.selected) {
             setCurrentTrack(tracName)
             save(this)
         }
@@ -50,12 +49,8 @@ object Repository {
     }
 
     fun updateTrackPosition(currentTrackOffset: Int) {
-        lydbøker.getSelected().currentTrackOffset = currentTrackOffset
+        lydbøker.selected.currentTrackOffset = currentTrackOffset
     }
 
-    fun playNext() {
-        lydbøker.getSelected().nextTrack()
-        signalLydbokChanged()
-    }
 }
 
